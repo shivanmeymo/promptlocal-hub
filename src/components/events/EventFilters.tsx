@@ -132,7 +132,7 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
         <div className="lg:col-span-1">
           <Label className="flex items-center gap-2 mb-2">
             <Search className="w-4 h-4" />
-            {t('search.search')}
+            {language === 'sv' ? 'Sök med nyckelord' : 'Search through keywords'}
           </Label>
           <Input
             placeholder={language === 'sv' ? 'Tryck Enter för att lägga till' : 'Press Enter to add'}

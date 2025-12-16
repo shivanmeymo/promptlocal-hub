@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Upload, Sparkles, Globe, Video, Repeat, X } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Calendar, MapPin, Upload, Sparkles, Globe, Video, Repeat, X, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,40 +20,31 @@ import { supabase } from '@/integrations/supabase/client';
 const categories = ['music', 'sports', 'art', 'food', 'business', 'education', 'community', 'other'] as const;
 const locations = ['Uppsala', 'Stockholm', 'Göteborg', 'Malmö', 'Lund', 'Linköping', 'Örebro', 'Västerås'];
 
-const CreateEvent: React.FC = () => {
+const EditEvent: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
   const { t, language } = useLanguage();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
 
-  // Get default dates and times
-  const getDefaultDates = () => {
-    const now = new Date();
-    const startDate = now.toISOString().split('T')[0];
-    const endDate = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    return { startDate, endDate, startTime: '17:00', endTime: '17:00' };
-  };
-
-  const defaults = getDefaultDates();
-
   const [formData, setFormData] = useState({
-    organizerName: profile?.full_name || '',
-    organizerEmail: profile?.email || user?.email || '',
+    organizerName: '',
+    organizerEmail: '',
     organizerDescription: '',
     organizerWebsite: '',
     title: '',
     description: '',
-    startDate: defaults.startDate,
-    startTime: defaults.startTime,
-    endDate: defaults.endDate,
-    endTime: defaults.endTime,
+    startDate: '',
+    startTime: '',
+    endDate: '',
+    endTime: '',
     location: '',
     category: '' as typeof categories[number] | '',
     otherCategory: '',
@@ -62,28 +53,75 @@ const CreateEvent: React.FC = () => {
     isOnline: false,
     isRecurring: false,
     recurringPattern: '',
+    imageUrl: '',
   });
 
   useEffect(() => {
-    if (profile) {
-      setFormData(f => ({
-        ...f,
-        organizerName: profile.full_name || f.organizerName,
-        organizerEmail: profile.email || user?.email || f.organizerEmail,
-      }));
-    }
-  }, [profile, user]);
-
-  useEffect(() => {
     if (!user) {
+      navigate('/auth');
+      return;
+    }
+    if (id) {
+      fetchEvent();
+    }
+  }, [user, id, navigate]);
+
+  const fetchEvent = async () => {
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
       toast({
-        title: language === 'sv' ? 'Logga in krävs' : 'Login required',
-        description: language === 'sv' ? 'Du måste logga in för att skapa event.' : 'You must log in to create events.',
+        title: t('common.error'),
+        description: language === 'sv' ? 'Event hittades inte' : 'Event not found',
         variant: 'destructive',
       });
-      navigate('/auth');
+      navigate('/manage-events');
+      return;
     }
-  }, [user, navigate]);
+
+    // Check ownership
+    if (data.user_id !== user?.id) {
+      toast({
+        title: t('common.error'),
+        description: language === 'sv' ? 'Du har inte behörighet att redigera detta event' : 'You do not have permission to edit this event',
+        variant: 'destructive',
+      });
+      navigate('/manage-events');
+      return;
+    }
+
+    setFormData({
+      organizerName: data.organizer_name || '',
+      organizerEmail: data.organizer_email || '',
+      organizerDescription: data.organizer_description || '',
+      organizerWebsite: data.organizer_website || '',
+      title: data.title || '',
+      description: data.description || '',
+      startDate: data.start_date || '',
+      startTime: data.start_time || '',
+      endDate: data.end_date || '',
+      endTime: data.end_time || '',
+      location: data.location || '',
+      category: data.category || '',
+      otherCategory: data.other_category || '',
+      isFree: data.is_free ?? true,
+      price: data.price?.toString() || '',
+      isOnline: data.is_online ?? false,
+      isRecurring: data.is_recurring ?? false,
+      recurringPattern: data.recurring_pattern || '',
+      imageUrl: data.image_url || '',
+    });
+
+    if (data.image_url) {
+      setImagePreview(data.image_url);
+    }
+
+    setFetching(false);
+  };
 
   const handleLocationInput = (value: string) => {
     setFormData({ ...formData, location: value });
@@ -126,81 +164,10 @@ const CreateEvent: React.FC = () => {
   const removeImage = () => {
     setImageFile(null);
     setImagePreview(null);
+    setFormData({ ...formData, imageUrl: '' });
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  };
-
-  const generateDescription = async () => {
-    if (!formData.title || !formData.category) {
-      toast({
-        title: language === 'sv' ? 'Fyll i titel och kategori först' : 'Fill in title and category first',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Check AI usage limit
-    const today = new Date().toISOString().split('T')[0];
-    const { data: usageData } = await supabase
-      .from('ai_usage')
-      .select('usage_count')
-      .eq('user_id', user?.id)
-      .eq('usage_date', today)
-      .single();
-
-    if (usageData && usageData.usage_count >= 4) {
-      toast({
-        title: language === 'sv' ? 'AI-gräns nådd' : 'AI Limit Reached',
-        description: language === 'sv' 
-          ? 'Du har nått gränsen på 4 AI-genereringar för idag. Försök igen imorgon.'
-          : 'You have reached the limit of 4 AI generations for today. Try again tomorrow.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setAiLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-event-description', {
-        body: {
-          title: formData.title,
-          category: formData.category === 'other' ? formData.otherCategory : formData.category,
-          location: formData.location,
-          isOnline: formData.isOnline,
-          isFree: formData.isFree,
-        },
-      });
-
-      if (error) throw error;
-      
-      if (data?.description) {
-        setFormData({ ...formData, description: data.description });
-        
-        // Update AI usage count
-        if (usageData) {
-          await supabase.from('ai_usage').update({ usage_count: usageData.usage_count + 1 })
-            .eq('user_id', user?.id).eq('usage_date', today);
-        } else {
-          await supabase.from('ai_usage').insert({ user_id: user?.id, usage_date: today, usage_count: 1 });
-        }
-        
-        toast({
-          title: language === 'sv' ? 'Beskrivning genererad!' : 'Description generated!',
-          description: language === 'sv' 
-            ? `${4 - ((usageData?.usage_count || 0) + 1)} AI-genereringar kvar idag`
-            : `${4 - ((usageData?.usage_count || 0) + 1)} AI generations left today`,
-        });
-      }
-    } catch (error: any) {
-      console.error('AI generation error:', error);
-      toast({
-        title: t('common.error'),
-        description: error.message || (language === 'sv' ? 'Kunde inte generera beskrivning' : 'Could not generate description'),
-        variant: 'destructive',
-      });
-    }
-    setAiLoading(false);
   };
 
   const validateDates = () => {
@@ -222,15 +189,14 @@ const CreateEvent: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !id) return;
     if (!validateDates()) return;
 
     setLoading(true);
 
     try {
-      let imageUrl = null;
+      let imageUrl = formData.imageUrl;
 
-      // Upload image if selected
       if (imageFile) {
         const fileExt = imageFile.name.split('.').pop();
         const fileName = `${user.id}/${Date.now()}.${fileExt}`;
@@ -239,9 +205,7 @@ const CreateEvent: React.FC = () => {
           .from('event-images')
           .upload(fileName, imageFile);
 
-        if (uploadError) {
-          console.error('Image upload error:', uploadError);
-        } else {
+        if (!uploadError) {
           const { data: { publicUrl } } = supabase.storage
             .from('event-images')
             .getPublicUrl(fileName);
@@ -249,8 +213,7 @@ const CreateEvent: React.FC = () => {
         }
       }
 
-      const { data: eventData, error } = await supabase.from('events').insert({
-        user_id: user.id,
+      const { error } = await supabase.from('events').update({
         organizer_name: formData.organizerName,
         organizer_email: formData.organizerEmail,
         organizer_description: formData.organizerDescription || null,
@@ -269,23 +232,13 @@ const CreateEvent: React.FC = () => {
         is_online: formData.isOnline,
         is_recurring: formData.isRecurring,
         recurring_pattern: formData.isRecurring ? formData.recurringPattern : null,
-        image_url: imageUrl,
-        status: 'pending',
-      }).select().single();
+        image_url: imageUrl || null,
+      }).eq('id', id);
 
       if (error) throw error;
 
-      // Notify admin about new event
-      try {
-        await supabase.functions.invoke('notify-admin-new-event', {
-          body: { event_id: eventData.id },
-        });
-      } catch (emailError) {
-        console.error('Failed to notify admin:', emailError);
-      }
-
       toast({
-        title: t('create.success'),
+        title: language === 'sv' ? 'Event uppdaterat!' : 'Event updated!',
       });
 
       navigate('/manage-events');
@@ -300,29 +253,43 @@ const CreateEvent: React.FC = () => {
     setLoading(false);
   };
 
-  if (!user) return null;
+  if (!user || fetching) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-muted rounded w-1/4" />
+            <div className="h-64 bg-muted rounded" />
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
       <Helmet>
-        <title>NowInTown - {t('create.title')}</title>
+        <title>NowInTown - {language === 'sv' ? 'Redigera Event' : 'Edit Event'}</title>
       </Helmet>
 
       <div className="container mx-auto px-4 py-12 max-w-3xl">
         <BackButton className="mb-4" />
         
         <div className="mb-8">
-          <h1 className="font-display text-3xl font-bold">{t('create.title')}</h1>
-          <p className="text-muted-foreground">{t('create.subtitle')}</p>
+          <h1 className="font-display text-3xl font-bold">
+            {language === 'sv' ? 'Redigera Event' : 'Edit Event'}
+          </h1>
+          <p className="text-muted-foreground">
+            {language === 'sv' ? 'Uppdatera informationen om ditt event' : 'Update your event information'}
+          </p>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="w-5 h-5" />
-              {t('create.title')}
+              {language === 'sv' ? 'Eventdetaljer' : 'Event Details'}
             </CardTitle>
-            <CardDescription>{t('create.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-8">
@@ -338,7 +305,6 @@ const CreateEvent: React.FC = () => {
                     id="organizerName"
                     value={formData.organizerName}
                     onChange={(e) => setFormData({ ...formData, organizerName: e.target.value })}
-                    placeholder={language === 'sv' ? 'Ange arrangörens fullständiga namn' : "Enter organizer's full name"}
                     required
                   />
                 </div>
@@ -352,7 +318,6 @@ const CreateEvent: React.FC = () => {
                     type="email"
                     value={formData.organizerEmail}
                     onChange={(e) => setFormData({ ...formData, organizerEmail: e.target.value })}
-                    placeholder="organizer@example.com"
                     required
                   />
                 </div>
@@ -367,7 +332,6 @@ const CreateEvent: React.FC = () => {
                     type="url"
                     value={formData.organizerWebsite}
                     onChange={(e) => setFormData({ ...formData, organizerWebsite: e.target.value })}
-                    placeholder="https://example.com"
                   />
                 </div>
 
@@ -377,7 +341,6 @@ const CreateEvent: React.FC = () => {
                     id="organizerDescription"
                     value={formData.organizerDescription}
                     onChange={(e) => setFormData({ ...formData, organizerDescription: e.target.value })}
-                    placeholder={language === 'sv' ? 'Berätta om dig själv och din erfarenhet av att arrangera event (valfritt)...' : 'Tell us about yourself and your experience organizing events (optional)...'}
                     rows={3}
                   />
                 </div>
@@ -438,9 +401,7 @@ const CreateEvent: React.FC = () => {
 
                 {formData.isRecurring && (
                   <div>
-                    <Label htmlFor="recurringPattern">
-                      {language === 'sv' ? 'Återkommande mönster' : 'Recurring Pattern'}
-                    </Label>
+                    <Label>{language === 'sv' ? 'Återkommande mönster' : 'Recurring Pattern'}</Label>
                     <Select
                       value={formData.recurringPattern}
                       onValueChange={(value) => setFormData({ ...formData, recurringPattern: value })}
@@ -471,35 +432,18 @@ const CreateEvent: React.FC = () => {
                     id="title"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder={language === 'sv' ? 't.ex. Sommar Musikfestival 2025' : 'e.g., Summer Music Festival 2025'}
                     required
                   />
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label htmlFor="description">
-                      {t('create.eventDesc')} <span className="text-destructive">*</span>
-                    </Label>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={generateDescription}
-                      disabled={aiLoading}
-                      className="gap-1"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      {aiLoading 
-                        ? (language === 'sv' ? 'Genererar...' : 'Generating...') 
-                        : (language === 'sv' ? 'Generera med AI' : 'Generate with AI')}
-                    </Button>
-                  </div>
+                  <Label htmlFor="description">
+                    {t('create.eventDesc')} <span className="text-destructive">*</span>
+                  </Label>
                   <Textarea
                     id="description"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder={language === 'sv' ? 'Beskriv vad som gör ditt event speciellt...' : 'Describe what makes your event special...'}
                     rows={4}
                     required
                   />
@@ -515,7 +459,6 @@ const CreateEvent: React.FC = () => {
                       type="date"
                       value={formData.startDate}
                       onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                      min={new Date().toISOString().split('T')[0]}
                       required
                     />
                   </div>
@@ -543,7 +486,6 @@ const CreateEvent: React.FC = () => {
                       type="date"
                       value={formData.endDate}
                       onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                      min={formData.startDate}
                       required
                     />
                   </div>
@@ -574,9 +516,6 @@ const CreateEvent: React.FC = () => {
                       onFocus={() => formData.location.length > 1 && setShowLocationSuggestions(locationSuggestions.length > 0)}
                       onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 200)}
                       className="pl-10"
-                      placeholder={formData.isOnline 
-                        ? (language === 'sv' ? 'Länk eller plattform' : 'Link or platform')
-                        : (language === 'sv' ? 'Eventplats' : 'Event location')}
                       required
                     />
                     {showLocationSuggestions && (
@@ -603,10 +542,9 @@ const CreateEvent: React.FC = () => {
                   <Select
                     value={formData.category}
                     onValueChange={(value) => setFormData({ ...formData, category: value as typeof categories[number] })}
-                    required
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={language === 'sv' ? 'Välj en kategori' : 'Select a category'} />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover">
                       {categories.map((cat) => (
@@ -627,16 +565,13 @@ const CreateEvent: React.FC = () => {
                       id="otherCategory"
                       value={formData.otherCategory}
                       onChange={(e) => setFormData({ ...formData, otherCategory: e.target.value })}
-                      placeholder={language === 'sv' ? 'Ange din kategori' : 'Enter your category'}
                       required={formData.category === 'other'}
                     />
                   </div>
                 )}
 
                 <div>
-                  <Label>
-                    {t('create.price')} <span className="text-destructive">*</span>
-                  </Label>
+                  <Label>{t('create.price')}</Label>
                   <div className="flex items-center gap-4 mt-2">
                     <div className="flex items-center gap-2">
                       <Checkbox
@@ -696,9 +631,6 @@ const CreateEvent: React.FC = () => {
                     >
                       <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                       <p className="text-sm text-muted-foreground">{t('create.uploadImage')}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {language === 'sv' ? 'Max 5MB' : 'Max 5MB'}
-                      </p>
                     </div>
                   )}
                 </div>
@@ -706,7 +638,9 @@ const CreateEvent: React.FC = () => {
 
               <Button type="submit" className="w-full bg-accent hover:bg-accent/90" disabled={loading}>
                 <Calendar className="w-4 h-4 mr-2" />
-                {loading ? t('common.loading') : t('create.submit')}
+                {loading 
+                  ? t('common.loading') 
+                  : (language === 'sv' ? 'Spara ändringar' : 'Save Changes')}
               </Button>
             </form>
           </CardContent>
@@ -716,4 +650,4 @@ const CreateEvent: React.FC = () => {
   );
 };
 
-export default CreateEvent;
+export default EditEvent;

@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_usage: {
+        Row: {
+          created_at: string
+          id: string
+          usage_count: number
+          usage_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          usage_count?: number
+          usage_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          usage_count?: number
+          usage_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       contact_messages: {
         Row: {
           category: string | null
@@ -74,6 +98,7 @@ export type Database = {
       events: {
         Row: {
           admin_notes: string | null
+          approval_token: string | null
           approved_at: string | null
           approved_by: string | null
           category: Database["public"]["Enums"]["event_category"]
@@ -103,6 +128,7 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          approval_token?: string | null
           approved_at?: string | null
           approved_by?: string | null
           category: Database["public"]["Enums"]["event_category"]
@@ -132,6 +158,7 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          approval_token?: string | null
           approved_at?: string | null
           approved_by?: string | null
           category?: Database["public"]["Enums"]["event_category"]
