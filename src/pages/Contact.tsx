@@ -47,6 +47,21 @@ const Contact: React.FC = () => {
 
       if (error) throw error;
 
+      // Send email notification
+      try {
+        await supabase.functions.invoke('send-contact-notification', {
+          body: {
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            category: formData.category,
+            message: formData.message,
+          },
+        });
+      } catch (emailError) {
+        console.error('Failed to send email notification:', emailError);
+      }
+
       toast({
         title: t('contact.success'),
         description: language === 'sv' ? 'Vi återkommer till dig så snart som möjligt.' : 'We\'ll get back to you as soon as possible.',
