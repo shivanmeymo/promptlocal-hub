@@ -44,6 +44,33 @@ export type Database = {
         }
         Relationships: []
       }
+      event_notifications: {
+        Row: {
+          created_at: string
+          email: string
+          filters: Json | null
+          id: string
+          is_active: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          filters?: Json | null
+          id?: string
+          is_active?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          filters?: Json | null
+          id?: string
+          is_active?: boolean | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           admin_notes: string | null
@@ -57,11 +84,16 @@ export type Database = {
           id: string
           image_url: string | null
           is_free: boolean
+          is_online: boolean | null
+          is_recurring: boolean | null
           location: string
           organizer_description: string | null
           organizer_email: string
           organizer_name: string
+          organizer_website: string | null
+          other_category: string | null
           price: number | null
+          recurring_pattern: string | null
           start_date: string
           start_time: string
           status: Database["public"]["Enums"]["event_status"]
@@ -81,11 +113,16 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_free?: boolean
+          is_online?: boolean | null
+          is_recurring?: boolean | null
           location: string
           organizer_description?: string | null
           organizer_email: string
           organizer_name: string
+          organizer_website?: string | null
+          other_category?: string | null
           price?: number | null
+          recurring_pattern?: string | null
           start_date: string
           start_time: string
           status?: Database["public"]["Enums"]["event_status"]
@@ -105,11 +142,16 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_free?: boolean
+          is_online?: boolean | null
+          is_recurring?: boolean | null
           location?: string
           organizer_description?: string | null
           organizer_email?: string
           organizer_name?: string
+          organizer_website?: string | null
+          other_category?: string | null
           price?: number | null
+          recurring_pattern?: string | null
           start_date?: string
           start_time?: string
           status?: Database["public"]["Enums"]["event_status"]
