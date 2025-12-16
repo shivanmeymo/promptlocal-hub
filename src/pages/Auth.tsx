@@ -132,6 +132,7 @@ const Auth: React.FC = () => {
                         value={loginEmail}
                         onChange={(e) => setLoginEmail(e.target.value)}
                         className="pl-10"
+                        placeholder="john@example.com"
                         required
                       />
                     </div>
@@ -146,6 +147,7 @@ const Auth: React.FC = () => {
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
                         className="pl-10"
+                        placeholder="••••••••"
                         required
                       />
                     </div>
@@ -168,6 +170,7 @@ const Auth: React.FC = () => {
                         value={signupName}
                         onChange={(e) => setSignupName(e.target.value)}
                         className="pl-10"
+                        placeholder="John Doe"
                         required
                       />
                     </div>
@@ -182,6 +185,7 @@ const Auth: React.FC = () => {
                         value={signupEmail}
                         onChange={(e) => setSignupEmail(e.target.value)}
                         className="pl-10"
+                        placeholder="john@example.com"
                         required
                       />
                     </div>
@@ -196,6 +200,7 @@ const Auth: React.FC = () => {
                         value={signupPassword}
                         onChange={(e) => setSignupPassword(e.target.value)}
                         className="pl-10"
+                        placeholder="Min. 6 characters"
                         minLength={6}
                         required
                       />

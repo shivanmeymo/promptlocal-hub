@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, MapPin, User, Mail, Globe, Share2, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, MapPin, User, Mail, Globe, Share2, Copy, Check, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Layout } from '@/components/layout/Layout';
+import { AddToCalendar } from '@/components/events/AddToCalendar';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -31,16 +33,20 @@ interface Event {
   organizer_description: string | null;
   organizer_website?: string | null;
   is_online?: boolean;
+  user_id: string;
 }
 
 const EventDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t, language } = useLanguage();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+
+  const isOwner = user && event && user.id === event.user_id;
 
   useEffect(() => {
     if (id) {
@@ -230,6 +236,19 @@ const EventDetails: React.FC = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Add to Calendar */}
+            <AddToCalendar event={event} />
+
+            {/* Edit Button for Owner */}
+            {isOwner && (
+              <Link to={`/edit-event/${event.id}`}>
+                <Button variant="outline" className="w-full gap-2">
+                  <Edit2 className="w-4 h-4" />
+                  {language === 'sv' ? 'Redigera event' : 'Edit Event'}
+                </Button>
+              </Link>
+            )}
+
             {/* Share Button */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

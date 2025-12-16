@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { useNavigate, Link } from 'react-router-dom';
 import { Calendar, Plus, Trash2, Edit2, Clock, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Layout } from '@/components/layout/Layout';
@@ -138,12 +138,16 @@ const ManageEvents: React.FC = () => {
         ) : events.length > 0 ? (
           <div className="grid gap-4">
             {events.map((event) => (
-              <Card key={event.id}>
+              <Card 
+                key={event.id} 
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => navigate(`/events/${event.id}`)}
+              >
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-start gap-3 mb-2">
-                        <h3 className="font-display font-semibold text-lg">{event.title}</h3>
+                        <h3 className="font-display font-semibold text-lg hover:text-primary transition-colors">{event.title}</h3>
                         {getStatusBadge(event.status)}
                       </div>
                       <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
@@ -167,7 +171,12 @@ const ManageEvents: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    <div className="flex gap-2 items-start">
+                    <div className="flex gap-2 items-start" onClick={(e) => e.stopPropagation()}>
+                      <Link to={`/edit-event/${event.id}`}>
+                        <Button variant="outline" size="sm">
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                      </Link>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="outline" size="sm" className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground">

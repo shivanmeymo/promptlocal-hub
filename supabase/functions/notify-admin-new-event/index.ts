@@ -29,7 +29,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { event_id }: NewEventRequest = await req.json();
     console.log("Notifying admin about new event:", event_id);
 
-    // Fetch event details
+    // Fetch event details including approval token
     const { data: event, error: eventError } = await supabase
       .from("events")
       .select("*")
@@ -41,30 +41,73 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Event not found");
     }
 
-    // Send notification to admin
+    const siteUrl = Deno.env.get("SITE_URL") || "https://your-site.lovable.app";
+    const functionUrl = `${supabaseUrl}/functions/v1/handle-event-approval`;
+    const approveUrl = `${functionUrl}?token=${event.approval_token}&action=approve`;
+    const rejectUrl = `${functionUrl}?token=${event.approval_token}&action=reject`;
+
+    // Send notification to admin with approve/reject buttons
     const adminEmailResponse = await resend.emails.send({
       from: "NowInTown <onboarding@resend.dev>",
       to: [ADMIN_EMAIL],
       subject: `New Event Pending Review: ${event.title}`,
       html: `
-        <h1>New Event Submitted for Review</h1>
-        <p>A new event has been submitted and requires your approval:</p>
-        <ul>
-          <li><strong>Title:</strong> ${event.title}</li>
-          <li><strong>Organizer:</strong> ${event.organizer_name} (${event.organizer_email})</li>
-          <li><strong>Date:</strong> ${event.start_date} at ${event.start_time}</li>
-          <li><strong>Location:</strong> ${event.location}</li>
-          <li><strong>Category:</strong> ${event.category}</li>
-          <li><strong>Price:</strong> ${event.is_free ? 'Free' : `${event.price} SEK`}</li>
-        </ul>
-        <h2>Event Description:</h2>
-        <p>${event.description}</p>
-        ${event.organizer_description ? `<h2>About the Organizer:</h2><p>${event.organizer_description}</p>` : ''}
-        <p style="margin-top: 20px;">
-          <a href="${Deno.env.get("SITE_URL") || "https://your-site.lovable.app"}/admin" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
-            Review Event in Dashboard
-          </a>
-        </p>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #1f2937;">New Event Submitted for Review</h1>
+          <p>A new event has been submitted and requires your approval:</p>
+          
+          <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; color: #6b7280; width: 120px;"><strong>Title:</strong></td>
+                <td style="padding: 8px 0;">${event.title}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #6b7280;"><strong>Organizer:</strong></td>
+                <td style="padding: 8px 0;">${event.organizer_name}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #6b7280;"><strong>Date:</strong></td>
+                <td style="padding: 8px 0;">${event.start_date} at ${event.start_time}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #6b7280;"><strong>Location:</strong></td>
+                <td style="padding: 8px 0;">${event.location}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #6b7280;"><strong>Category:</strong></td>
+                <td style="padding: 8px 0;">${event.category}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #6b7280;"><strong>Price:</strong></td>
+                <td style="padding: 8px 0;">${event.is_free ? 'Free' : `${event.price} SEK`}</td>
+              </tr>
+            </table>
+          </div>
+
+          <h2 style="color: #374151; font-size: 16px;">Event Description:</h2>
+          <p style="color: #4b5563; background: #f3f4f6; padding: 15px; border-radius: 8px;">${event.description}</p>
+          
+          ${event.organizer_description ? `
+            <h2 style="color: #374151; font-size: 16px;">About the Organizer:</h2>
+            <p style="color: #4b5563;">${event.organizer_description}</p>
+          ` : ''}
+
+          <div style="margin-top: 30px; text-align: center;">
+            <a href="${approveUrl}" 
+               style="background-color: #22c55e; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; margin-right: 12px;">
+              ✓ Approve Event
+            </a>
+            <a href="${rejectUrl}" 
+               style="background-color: #ef4444; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+              ✕ Reject Event
+            </a>
+          </div>
+
+          <p style="margin-top: 30px; color: #9ca3af; font-size: 12px; text-align: center;">
+            Or review in the <a href="${siteUrl}/admin" style="color: #4F46E5;">Admin Dashboard</a>
+          </p>
+        </div>
       `,
     });
 
