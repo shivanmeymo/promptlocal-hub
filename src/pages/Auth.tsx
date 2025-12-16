@@ -114,13 +114,13 @@ const Auth: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login">
+            <Tabs defaultValue="signin">
               <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">{t('auth.login')}</TabsTrigger>
-                <TabsTrigger value="signup">{t('auth.signup')}</TabsTrigger>
+                <TabsTrigger value="signin">{t('auth.signIn')}</TabsTrigger>
+                <TabsTrigger value="signup">{t('auth.signUp')}</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="login">
+              <TabsContent value="signin">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div>
                     <Label htmlFor="login-email">{t('auth.email')}</Label>
@@ -153,7 +153,7 @@ const Auth: React.FC = () => {
                     </div>
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? t('common.loading') : t('auth.login')}
+                    {loading ? t('common.loading') : t('auth.signIn')}
                   </Button>
                 </form>
               </TabsContent>
@@ -207,7 +207,7 @@ const Auth: React.FC = () => {
                     </div>
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? t('common.loading') : t('auth.signup')}
+                    {loading ? t('common.loading') : t('auth.signUp')}
                   </Button>
                 </form>
               </TabsContent>

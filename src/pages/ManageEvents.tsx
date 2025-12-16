@@ -173,8 +173,9 @@ const ManageEvents: React.FC = () => {
                     </div>
                     <div className="flex gap-2 items-start" onClick={(e) => e.stopPropagation()}>
                       <Link to={`/edit-event/${event.id}`}>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" className="gap-1">
                           <Edit2 className="w-4 h-4" />
+                          {t('events.edit')}
                         </Button>
                       </Link>
                       <AlertDialog>

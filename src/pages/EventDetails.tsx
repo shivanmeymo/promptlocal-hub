@@ -87,7 +87,7 @@ const EventDetails: React.FC = () => {
     return timeStr.slice(0, 5);
   };
 
-  const handleShare = async (method: 'copy' | 'twitter' | 'facebook' | 'whatsapp') => {
+  const handleShare = async (method: 'copy' | 'twitter' | 'facebook' | 'instagram' | 'email') => {
     const url = window.location.href;
     const text = `${event?.title} - ${formatDate(event?.start_date || '')}`;
 
@@ -106,8 +106,15 @@ const EventDetails: React.FC = () => {
       case 'facebook':
         window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
         break;
-      case 'whatsapp':
-        window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+      case 'instagram':
+        await navigator.clipboard.writeText(url);
+        toast({
+          title: language === 'sv' ? 'Länk kopierad! Dela på Instagram' : 'Link copied! Share on Instagram',
+          description: language === 'sv' ? 'Klistra in länken i din Instagram story eller DM' : 'Paste the link in your Instagram story or DM',
+        });
+        break;
+      case 'email':
+        window.location.href = `mailto:?subject=${encodeURIComponent(event?.title || '')}&body=${encodeURIComponent(text + '\n\n' + url)}`;
         break;
     }
   };
@@ -268,8 +275,11 @@ const EventDetails: React.FC = () => {
                 <DropdownMenuItem onClick={() => handleShare('facebook')}>
                   Facebook
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleShare('whatsapp')}>
-                  WhatsApp
+                <DropdownMenuItem onClick={() => handleShare('instagram')}>
+                  Instagram
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare('email')}>
+                  {language === 'sv' ? 'E-post' : 'Email'}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

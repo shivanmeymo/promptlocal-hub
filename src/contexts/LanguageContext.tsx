@@ -21,6 +21,7 @@ const translations: Translations = {
   'nav.manageEvents': { en: 'Manage Events', sv: 'Hantera Event' },
   'nav.logout': { en: 'Log Out', sv: 'Logga Ut' },
   'nav.login': { en: 'Log In', sv: 'Logga In' },
+  'nav.signInUp': { en: 'Sign In / Sign Up', sv: 'Logga In / Registrera' },
   'nav.menu': { en: 'Menu', sv: 'Meny' },
 
   // Hero Section
@@ -131,6 +132,8 @@ const translations: Translations = {
 
   // Auth
   'auth.login': { en: 'Log In', sv: 'Logga In' },
+  'auth.signIn': { en: 'Sign In', sv: 'Logga In' },
+  'auth.signUp': { en: 'Sign Up', sv: 'Registrera dig' },
   'auth.signup': { en: 'Sign Up', sv: 'Registrera dig' },
   'auth.email': { en: 'Email', sv: 'E-post' },
   'auth.password': { en: 'Password', sv: 'Lösenord' },
