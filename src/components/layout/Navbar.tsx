@@ -168,16 +168,13 @@ export const Navbar: React.FC = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
-            <Link to="/auth">
-              <Button variant="outline">{t('nav.login')}</Button>
-            </Link>
-          )}
+          ) : null}
 
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="md:flex">
+              <Button variant="outline" className="md:flex gap-2">
                 <Menu className="w-5 h-5" />
+                <span className="text-sm">{t('nav.menu')}</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-80">
@@ -203,7 +200,7 @@ export const Navbar: React.FC = () => {
                   </Button>
                 ) : (
                   <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full">{t('nav.login')}</Button>
+                    <Button className="w-full">{t('nav.signInUp')}</Button>
                   </Link>
                 )}
               </div>
@@ -223,8 +220,9 @@ export const Navbar: React.FC = () => {
 
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" className="gap-2">
                 <Menu className="w-5 h-5" />
+                <span className="text-sm">{t('nav.menu')}</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-80">
@@ -250,7 +248,7 @@ export const Navbar: React.FC = () => {
                   </Button>
                 ) : (
                   <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full">{t('nav.login')}</Button>
+                    <Button className="w-full">{t('nav.signInUp')}</Button>
                   </Link>
                 )}
               </div>
