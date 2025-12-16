@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.send-event-approval-notification]
 verify_jwt = true
+
+[functions.generate-event-description]
+verify_jwt = true
+
+[functions.notify-admin-new-event]
+verify_jwt = true
