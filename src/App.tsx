@@ -13,6 +13,7 @@ import Contact from "./pages/Contact";
 import CreateEvent from "./pages/CreateEvent";
 import Profile from "./pages/Profile";
 import ManageEvents from "./pages/ManageEvents";
+import AdminDashboard from "./pages/AdminDashboard";
 import DataIntegrity from "./pages/DataIntegrity";
 import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
@@ -36,6 +37,7 @@ const App = () => (
                 <Route path="/create-event" element={<CreateEvent />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/manage-events" element={<ManageEvents />} />
+                <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/data-integrity" element={<DataIntegrity />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="*" element={<NotFound />} />
