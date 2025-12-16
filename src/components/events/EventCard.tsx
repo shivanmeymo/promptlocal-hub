@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Calendar, Clock, MapPin, Edit2 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +20,7 @@ interface Event {
   price?: number;
   image_url?: string;
   status: string;
+  organizer_name?: string;
 }
 
 interface EventCardProps {
@@ -64,71 +66,80 @@ export const EventCard: React.FC<EventCardProps> = ({ event, isOwner, onEdit }) 
   };
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300 animate-fade-in">
-      <CardHeader className="p-0 relative">
-        <div className="aspect-video bg-muted relative overflow-hidden">
-          {event.image_url ? (
-            <img
-              src={event.image_url}
-              alt={event.title}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-              <span className="text-4xl">🎉</span>
+    <Link to={`/event/${event.id}`}>
+      <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300 animate-fade-in cursor-pointer h-full">
+        <CardHeader className="p-0 relative">
+          <div className="aspect-video bg-muted relative overflow-hidden">
+            {event.image_url ? (
+              <img
+                src={event.image_url}
+                alt={event.title}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                <span className="text-4xl">🎉</span>
+              </div>
+            )}
+            <Badge className={`absolute top-3 right-3 ${getCategoryColor(event.category)}`}>
+              {getCategoryLabel(event.category)}
+            </Badge>
+            {isOwner && (
+              <Button
+                size="sm"
+                variant="secondary"
+                className="absolute top-3 left-3"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onEdit?.();
+                }}
+              >
+                <Edit2 className="w-4 h-4 mr-1" />
+                {t('events.edit')}
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="p-4">
+          <h3 className="font-display font-semibold text-lg mb-2 line-clamp-2">
+            {event.title}
+          </h3>
+          
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-accent" />
+              <span>{formatDate(event.start_date)} {language === 'sv' ? 'kl' : 'at'} {formatTime(event.start_time)}</span>
             </div>
-          )}
-          <Badge className={`absolute top-3 right-3 ${getCategoryColor(event.category)}`}>
-            {getCategoryLabel(event.category)}
-          </Badge>
-          {isOwner && (
-            <Button
-              size="sm"
-              variant="secondary"
-              className="absolute top-3 left-3"
-              onClick={onEdit}
-            >
-              <Edit2 className="w-4 h-4 mr-1" />
-              {t('events.edit')}
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="p-4">
-        <h3 className="font-display font-semibold text-lg mb-2 line-clamp-2">
-          {event.title}
-        </h3>
-        
-        <div className="space-y-2 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-accent" />
-            <span>{formatDate(event.start_date)} {language === 'sv' ? 'kl' : 'at'} {formatTime(event.start_time)}</span>
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-accent" />
+              <span>{event.location}</span>
+            </div>
+            {event.organizer_name && (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-muted-foreground">
+                  {language === 'sv' ? 'Av' : 'By'} {event.organizer_name}
+                </span>
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-accent" />
-            <span>{formatDate(event.end_date)} {language === 'sv' ? 'kl' : 'at'} {formatTime(event.end_time)}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-accent" />
-            <span>{event.location}</span>
-          </div>
-        </div>
 
-        <div className="mt-3 flex items-center justify-between">
-          {event.is_free ? (
-            <Badge variant="secondary" className="bg-success/10 text-success">
-              {t('search.free')}
-            </Badge>
-          ) : (
-            <span className="font-semibold text-primary">{event.price} SEK</span>
-          )}
-          {event.status === 'pending' && (
-            <Badge variant="outline" className="text-warning border-warning">
-              {t('events.pending')}
-            </Badge>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+          <div className="mt-3 flex items-center justify-between">
+            {event.is_free ? (
+              <Badge variant="secondary" className="bg-success/10 text-success">
+                {t('search.free')}
+              </Badge>
+            ) : (
+              <span className="font-semibold text-primary">{event.price} SEK</span>
+            )}
+            {event.status === 'pending' && (
+              <Badge variant="outline" className="text-warning border-warning">
+                {t('events.pending')}
+              </Badge>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 };

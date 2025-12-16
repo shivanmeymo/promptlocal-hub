@@ -22,6 +22,7 @@ interface Event {
   price?: number;
   image_url?: string;
   status: string;
+  organizer_name?: string;
 }
 
 const Index: React.FC = () => {
@@ -35,6 +36,7 @@ const Index: React.FC = () => {
     location: '',
     category: '',
     freeOnly: false,
+    keywords: [] as string[],
   });
 
   useEffect(() => {
@@ -62,7 +64,19 @@ const Index: React.FC = () => {
   const applyFilters = () => {
     let result = [...events];
 
-    if (filters.search) {
+    // Apply keyword search
+    if (filters.keywords.length > 0) {
+      result = result.filter((e) =>
+        filters.keywords.some(keyword => {
+          const kw = keyword.toLowerCase();
+          return (
+            e.title.toLowerCase().includes(kw) ||
+            e.description.toLowerCase().includes(kw) ||
+            e.location.toLowerCase().includes(kw)
+          );
+        })
+      );
+    } else if (filters.search) {
       const searchLower = filters.search.toLowerCase();
       result = result.filter(
         (e) =>
@@ -119,7 +133,17 @@ const Index: React.FC = () => {
   };
 
   const scrollToEvents = () => {
-    document.getElementById('events-section')?.scrollIntoView({ behavior: 'smooth' });
+    const element = document.getElementById('events-section');
+    if (element) {
+      const offset = 80; // Account for sticky header
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - offset;
+      
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
   };
 
   return (
@@ -169,6 +193,7 @@ const Index: React.FC = () => {
           onLocationChange={(value) => setFilters((f) => ({ ...f, location: value }))}
           onCategoryChange={(value) => setFilters((f) => ({ ...f, category: value }))}
           onFreeOnlyChange={(value) => setFilters((f) => ({ ...f, freeOnly: value }))}
+          onKeywordsChange={(keywords) => setFilters((f) => ({ ...f, keywords }))}
         />
       </section>
 
