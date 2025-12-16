@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ScrollToTop } from "@/components/ScrollToTop";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import About from "./pages/About";
@@ -14,6 +15,7 @@ import CreateEvent from "./pages/CreateEvent";
 import Profile from "./pages/Profile";
 import ManageEvents from "./pages/ManageEvents";
 import AdminDashboard from "./pages/AdminDashboard";
+import EventDetails from "./pages/EventDetails";
 import DataIntegrity from "./pages/DataIntegrity";
 import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
@@ -29,6 +31,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <ScrollToTop />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
@@ -38,6 +41,7 @@ const App = () => (
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/manage-events" element={<ManageEvents />} />
                 <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/event/:id" element={<EventDetails />} />
                 <Route path="/data-integrity" element={<DataIntegrity />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="*" element={<NotFound />} />

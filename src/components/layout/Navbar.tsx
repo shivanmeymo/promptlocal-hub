@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+
 const SwedishFlag = () => (
   <svg width="24" height="18" viewBox="0 0 24 18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect width="24" height="18" fill="#006AA7" />
@@ -130,12 +131,15 @@ export const Navbar: React.FC = () => {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="gap-2">
+                <Button 
+                  variant="outline" 
+                  className="gap-2 border-foreground/20 bg-secondary hover:bg-secondary/80 rounded-tr-none"
+                >
                   <User className="w-4 h-4" />
                   {profile?.full_name || user.email?.split('@')[0]}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-48 bg-popover">
                 <DropdownMenuItem asChild>
                   <Link to="/profile" className="cursor-pointer">
                     {t('nav.myAccount')}
