@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { ArrowDown } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowDown, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Layout } from '@/components/layout/Layout';
 import { EventCard } from '@/components/events/EventCard';
@@ -8,6 +9,15 @@ import { EventFilters } from '@/components/events/EventFilters';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 
+const CITIES = [
+  { slug: 'stockholm', name: 'Stockholm' },
+  { slug: 'goteborg', name: 'Göteborg' },
+  { slug: 'malmo', name: 'Malmö' },
+  { slug: 'uppsala', name: 'Uppsala' },
+  { slug: 'lund', name: 'Lund' },
+  { slug: 'linkoping', name: 'Linköping' },
+  { slug: 'umea', name: 'Umeå' },
+];
 interface Event {
   id: string;
   title: string;
@@ -199,6 +209,46 @@ const Index: React.FC = () => {
               {t('hero.cta')}
               <ArrowDown className="ml-2 w-5 h-5" aria-hidden="true" />
             </Button>
+
+            {/* City Links for filtering */}
+            <nav 
+              className="mt-10 pt-8 border-t border-white/20"
+              aria-label={language === 'sv' ? 'Evenemang per stad' : 'Events by city'}
+            >
+              <p className="text-sm text-white/70 mb-4">
+                {language === 'sv' ? 'Hitta evenemang i din stad:' : 'Find events in your city:'}
+              </p>
+              <ul className="flex flex-wrap justify-center gap-3">
+                {CITIES.map((city) => (
+                  <li key={city.slug}>
+                    <button
+                      onClick={() => {
+                        setFilters((f) => ({ ...f, location: city.name.toLowerCase() }));
+                        scrollToEvents();
+                      }}
+                      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors focus:ring-2 focus:ring-white focus:outline-none ${
+                        filters.location.toLowerCase() === city.name.toLowerCase()
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-white/10 hover:bg-white/20 text-white'
+                      }`}
+                    >
+                      <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
+                      {city.name}
+                    </button>
+                  </li>
+                ))}
+                {filters.location && (
+                  <li>
+                    <button
+                      onClick={() => setFilters((f) => ({ ...f, location: '' }))}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-full text-sm font-medium text-white transition-colors focus:ring-2 focus:ring-white focus:outline-none"
+                    >
+                      {language === 'sv' ? 'Visa alla' : 'Show all'}
+                    </button>
+                  </li>
+                )}
+              </ul>
+            </nav>
           </div>
         </section>
 
@@ -214,6 +264,7 @@ const Index: React.FC = () => {
             onCategoryChange={(value) => setFilters((f) => ({ ...f, category: value }))}
             onFreeOnlyChange={(value) => setFilters((f) => ({ ...f, freeOnly: value }))}
             onKeywordsChange={(keywords) => setFilters((f) => ({ ...f, keywords }))}
+            initialLocation={filters.location}
           />
         </section>
 

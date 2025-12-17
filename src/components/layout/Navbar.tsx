@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, User, Calendar, LogOut, Shield } from 'lucide-react';
+import { Menu, X, User, Calendar, LogOut, Shield, MapPin, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+
+const CITIES = [
+  { slug: 'stockholm', name: 'Stockholm' },
+  { slug: 'goteborg', name: 'Göteborg' },
+  { slug: 'malmo', name: 'Malmö' },
+  { slug: 'uppsala', name: 'Uppsala' },
+  { slug: 'lund', name: 'Lund' },
+  { slug: 'linkoping', name: 'Linköping' },
+  { slug: 'umea', name: 'Umeå' },
+];
 
 const SwedishFlag = () => (
   <svg width="24" height="18" viewBox="0 0 24 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -65,6 +75,26 @@ export const Navbar: React.FC = () => {
 
   const NavLinks = ({ mobile = false }: { mobile?: boolean }) => (
     <>
+      {mobile && (
+        <div className="py-2">
+          <p className="text-sm font-medium text-muted-foreground mb-2 px-2">
+            {language === 'sv' ? 'Evenemang per stad' : 'Events by city'}
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {CITIES.map((city) => (
+              <Link
+                key={city.slug}
+                to={`/events/${city.slug}`}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm text-foreground hover:text-primary hover:bg-muted rounded-md transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                {city.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
       {user && (
         <Link
           to="/manage-events"
@@ -113,6 +143,27 @@ export const Navbar: React.FC = () => {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-6">
+          {/* Cities Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="gap-1.5">
+                <MapPin className="w-4 h-4" />
+                {language === 'sv' ? 'Städer' : 'Cities'}
+                <ChevronDown className="w-3.5 h-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-48 bg-popover">
+              {CITIES.map((city) => (
+                <DropdownMenuItem key={city.slug} asChild>
+                  <Link to={`/events/${city.slug}`} className="cursor-pointer">
+                    <MapPin className="w-4 h-4 mr-2" />
+                    {city.name}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <button
             onClick={toggleLanguage}
             className="p-1 rounded hover:bg-muted transition-colors"
