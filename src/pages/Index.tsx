@@ -49,10 +49,10 @@ const Index: React.FC = () => {
 
   const fetchEvents = async () => {
     setLoading(true);
+    // Use public_events view which excludes sensitive data like organizer_email
     const { data, error } = await supabase
-      .from('events')
+      .from('public_events')
       .select('*')
-      .eq('status', 'approved')
       .order('start_date', { ascending: true });
 
     if (!error && data) {

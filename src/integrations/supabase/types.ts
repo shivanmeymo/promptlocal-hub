@@ -256,7 +256,6 @@ export type Database = {
           is_recurring: boolean | null
           location: string | null
           organizer_description: string | null
-          organizer_email: string | null
           organizer_name: string | null
           organizer_website: string | null
           other_category: string | null
@@ -283,7 +282,6 @@ export type Database = {
           is_recurring?: boolean | null
           location?: string | null
           organizer_description?: string | null
-          organizer_email?: string | null
           organizer_name?: string | null
           organizer_website?: string | null
           other_category?: string | null
@@ -310,7 +308,6 @@ export type Database = {
           is_recurring?: boolean | null
           location?: string | null
           organizer_description?: string | null
-          organizer_email?: string | null
           organizer_name?: string | null
           organizer_website?: string | null
           other_category?: string | null
