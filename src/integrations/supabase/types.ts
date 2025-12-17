@@ -241,7 +241,90 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_events: {
+        Row: {
+          approved_at: string | null
+          category: Database["public"]["Enums"]["event_category"] | null
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          end_time: string | null
+          id: string | null
+          image_url: string | null
+          is_free: boolean | null
+          is_online: boolean | null
+          is_recurring: boolean | null
+          location: string | null
+          organizer_description: string | null
+          organizer_email: string | null
+          organizer_name: string | null
+          organizer_website: string | null
+          other_category: string | null
+          price: number | null
+          recurring_pattern: string | null
+          start_date: string | null
+          start_time: string | null
+          status: Database["public"]["Enums"]["event_status"] | null
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          category?: Database["public"]["Enums"]["event_category"] | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          end_time?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_free?: boolean | null
+          is_online?: boolean | null
+          is_recurring?: boolean | null
+          location?: string | null
+          organizer_description?: string | null
+          organizer_email?: string | null
+          organizer_name?: string | null
+          organizer_website?: string | null
+          other_category?: string | null
+          price?: number | null
+          recurring_pattern?: string | null
+          start_date?: string | null
+          start_time?: string | null
+          status?: Database["public"]["Enums"]["event_status"] | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          category?: Database["public"]["Enums"]["event_category"] | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          end_time?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_free?: boolean | null
+          is_online?: boolean | null
+          is_recurring?: boolean | null
+          location?: string | null
+          organizer_description?: string | null
+          organizer_email?: string | null
+          organizer_name?: string | null
+          organizer_website?: string | null
+          other_category?: string | null
+          price?: number | null
+          recurring_pattern?: string | null
+          start_date?: string | null
+          start_time?: string | null
+          status?: Database["public"]["Enums"]["event_status"] | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
