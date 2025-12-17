@@ -85,23 +85,7 @@ const Profile: React.FC = () => {
 
     setPasswordLoading(true);
 
-    // First verify current password by attempting to sign in
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: user?.email || '',
-      password: currentPassword,
-    });
-
-    if (signInError) {
-      toast({
-        title: t('common.error'),
-        description: language === 'sv' ? 'Nuvarande lösenord är felaktigt' : 'Current password is incorrect',
-        variant: 'destructive',
-      });
-      setPasswordLoading(false);
-      return;
-    }
-
-    const { error } = await updatePassword(newPassword);
+    const { error } = await updatePassword(currentPassword, newPassword);
 
     if (error) {
       toast({
