@@ -149,81 +149,121 @@ const Index: React.FC = () => {
   return (
     <Layout>
       <Helmet>
-        <title>NowInTown - {language === 'sv' ? 'Upptäck Event i Sverige' : 'Discover Events in Sweden'}</title>
+        <title>
+          {language === 'sv' 
+            ? 'NowInTown - Evenemang i Uppsala & Sverige | Aktiviteter & Events' 
+            : 'NowInTown - Events in Uppsala & Sweden | Activities & Events'}
+        </title>
         <meta
           name="description"
           content={
             language === 'sv'
-              ? 'Upptäck tusentals event och aktiviteter över hela Sverige. Hitta konserter, sportevent, workshops och mer.'
-              : 'Discover thousands of events and activities across Sweden. Find concerts, sports events, workshops and more.'
+              ? 'Hitta evenemang och aktiviteter i Uppsala och hela Sverige. Konserter, sport, konst, mat, utbildning och community events. Gratis och betalda evenemang.'
+              : 'Find events and activities in Uppsala and across Sweden. Concerts, sports, art, food, education and community events. Free and paid events.'
           }
         />
+        <meta 
+          name="keywords" 
+          content={
+            language === 'sv'
+              ? 'evenemang Uppsala, aktiviteter Uppsala, events Sverige, konserter Uppsala, sport Uppsala, gratis evenemang, vad göra Uppsala, evenemang idag'
+              : 'events Uppsala, activities Uppsala, events Sweden, concerts Uppsala, sports Uppsala, free events, things to do Uppsala, events today'
+          }
+        />
+        <link rel="canonical" href="https://nowintown.se" />
       </Helmet>
 
       {/* Hero Section */}
-      <section
-        className="relative min-h-[70vh] flex items-center justify-center bg-cover bg-center"
-        style={{
-          backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920&q=80')`,
-        }}
-      >
-        <div className="container mx-auto px-4 text-center text-white">
-          <h1 className="font-display text-4xl md:text-6xl font-bold mb-6 animate-fade-in">
-            {t('hero.title')}
-          </h1>
-          <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8 opacity-90">
-            {t('hero.subtitle')}
-          </p>
-          <Button
-            size="lg"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 py-6 text-lg"
-            onClick={scrollToEvents}
-          >
-            {t('hero.cta')}
-            <ArrowDown className="ml-2 w-5 h-5" />
-          </Button>
-        </div>
-      </section>
-
-      {/* Filters Section */}
-      <section className="container mx-auto px-4 -mt-8 relative z-10">
-        <EventFilters
-          onSearchChange={(value) => setFilters((f) => ({ ...f, search: value }))}
-          onDateChange={(value) => setFilters((f) => ({ ...f, date: value }))}
-          onLocationChange={(value) => setFilters((f) => ({ ...f, location: value }))}
-          onCategoryChange={(value) => setFilters((f) => ({ ...f, category: value }))}
-          onFreeOnlyChange={(value) => setFilters((f) => ({ ...f, freeOnly: value }))}
-          onKeywordsChange={(keywords) => setFilters((f) => ({ ...f, keywords }))}
-        />
-      </section>
-
-      {/* Events Section */}
-      <section id="events-section" className="container mx-auto px-4 py-12">
-        <div className="mb-8">
-          <h2 className="font-display text-3xl font-bold">{t('events.upcoming')}</h2>
-          <p className="text-muted-foreground">
-            {filteredEvents.length} {t('events.found')}
-          </p>
-        </div>
-
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="bg-muted animate-pulse rounded-xl h-80" />
-            ))}
+      <main>
+        <section
+          role="banner"
+          aria-label={language === 'sv' ? 'Välkommen till NowInTown' : 'Welcome to NowInTown'}
+          className="relative min-h-[70vh] flex items-center justify-center bg-cover bg-center"
+          style={{
+            backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920&q=80')`,
+          }}
+        >
+          <div className="container mx-auto px-4 text-center text-white">
+            <h1 className="font-display text-4xl md:text-6xl font-bold mb-6 animate-fade-in">
+              {t('hero.title')}
+            </h1>
+            <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8 opacity-90">
+              {t('hero.subtitle')}
+            </p>
+            <Button
+              size="lg"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 py-6 text-lg focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              onClick={scrollToEvents}
+              aria-label={language === 'sv' ? 'Scrolla till evenemang' : 'Scroll to events'}
+            >
+              {t('hero.cta')}
+              <ArrowDown className="ml-2 w-5 h-5" aria-hidden="true" />
+            </Button>
           </div>
-        ) : filteredEvents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredEvents.map((event) => (
-              <EventCard key={event.id} event={event} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-16 bg-muted rounded-xl">
-            <p className="text-xl text-muted-foreground">{t('events.noEvents')}</p>
-          </div>
-        )}
-      </section>
+        </section>
+
+        {/* Filters Section */}
+        <section 
+          aria-label={language === 'sv' ? 'Sök och filtrera evenemang' : 'Search and filter events'}
+          className="container mx-auto px-4 -mt-8 relative z-10"
+        >
+          <EventFilters
+            onSearchChange={(value) => setFilters((f) => ({ ...f, search: value }))}
+            onDateChange={(value) => setFilters((f) => ({ ...f, date: value }))}
+            onLocationChange={(value) => setFilters((f) => ({ ...f, location: value }))}
+            onCategoryChange={(value) => setFilters((f) => ({ ...f, category: value }))}
+            onFreeOnlyChange={(value) => setFilters((f) => ({ ...f, freeOnly: value }))}
+            onKeywordsChange={(keywords) => setFilters((f) => ({ ...f, keywords }))}
+          />
+        </section>
+
+        {/* Events Section */}
+        <section 
+          id="events-section" 
+          aria-label={language === 'sv' ? 'Lista över evenemang' : 'Events listing'}
+          className="container mx-auto px-4 py-12"
+        >
+          <header className="mb-8">
+            <h2 className="font-display text-3xl font-bold">{t('events.upcoming')}</h2>
+            <p className="text-muted-foreground" aria-live="polite">
+              {filteredEvents.length} {t('events.found')}
+            </p>
+          </header>
+
+          {loading ? (
+            <div 
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              aria-busy="true"
+              aria-label={language === 'sv' ? 'Laddar evenemang...' : 'Loading events...'}
+            >
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div 
+                  key={i} 
+                  className="bg-muted animate-pulse rounded-xl h-80" 
+                  role="status"
+                  aria-label={language === 'sv' ? 'Laddar...' : 'Loading...'}
+                />
+              ))}
+            </div>
+          ) : filteredEvents.length > 0 ? (
+            <ul 
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 list-none p-0"
+              role="list"
+              aria-label={language === 'sv' ? 'Evenemang' : 'Events'}
+            >
+              {filteredEvents.map((event) => (
+                <li key={event.id}>
+                  <EventCard event={event} />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-center py-16 bg-muted rounded-xl" role="status">
+              <p className="text-xl text-muted-foreground">{t('events.noEvents')}</p>
+            </div>
+          )}
+        </section>
+      </main>
     </Layout>
   );
 };

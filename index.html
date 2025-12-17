@@ -1,22 +1,88 @@
 <!doctype html>
-<html lang="en">
+<html lang="sv">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>Lovable App</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
+    
+    <!-- Primary SEO -->
+    <title>NowInTown - Evenemang i Uppsala & Sverige | Events in Uppsala & Sweden</title>
+    <meta name="description" content="Hitta evenemang, aktiviteter och events i Uppsala och hela Sverige. Find events, activities in Uppsala and Sweden. Konserter, sport, konst, mat, utbildning." />
+    <meta name="keywords" content="evenemang Uppsala, events Uppsala, aktiviteter Uppsala, events in Uppsala, activities Uppsala, evenemang Sverige, events Sweden, aktiviteter Sverige, konserter Uppsala, sport Uppsala, konst Uppsala, mat evenemang, utbildning, community events, free events, gratis evenemang, things to do Uppsala, vad göra Uppsala" />
+    <meta name="author" content="NowInTown" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://nowintown.se" />
+    
+    <!-- Language alternates -->
+    <link rel="alternate" hreflang="sv" href="https://nowintown.se" />
+    <link rel="alternate" hreflang="en" href="https://nowintown.se" />
+    <link rel="alternate" hreflang="x-default" href="https://nowintown.se" />
 
-    <!-- TODO: Update og:title to match your application name -->
-    <meta property="og:title" content="Lovable App" />
-    <meta property="og:description" content="Lovable Generated Project" />
+    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://nowintown.se" />
+    <meta property="og:title" content="NowInTown - Evenemang i Uppsala & Sverige | Events in Uppsala & Sweden" />
+    <meta property="og:description" content="Hitta evenemang, aktiviteter och events i Uppsala och hela Sverige. Konserter, sport, konst, mat och mer." />
     <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:locale" content="sv_SE" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:site_name" content="NowInTown" />
 
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
+    <meta name="twitter:url" content="https://nowintown.se" />
+    <meta name="twitter:title" content="NowInTown - Evenemang i Uppsala & Sverige" />
+    <meta name="twitter:description" content="Hitta evenemang och aktiviteter i Uppsala och Sverige. Find events in Uppsala and Sweden." />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+    <!-- Geo tags for local SEO -->
+    <meta name="geo.region" content="SE-C" />
+    <meta name="geo.placename" content="Uppsala" />
+    <meta name="geo.position" content="59.8586;17.6389" />
+    <meta name="ICBM" content="59.8586, 17.6389" />
+
+    <!-- Structured Data for Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "NowInTown",
+      "alternateName": ["NowInTown Uppsala", "NowInTown Sverige"],
+      "url": "https://nowintown.se",
+      "description": "Hitta evenemang och aktiviteter i Uppsala och Sverige",
+      "inLanguage": ["sv", "en"],
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://nowintown.se/?search={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
+    <!-- Structured Data for Local Business -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "NowInTown",
+      "description": "Platform för evenemang och aktiviteter i Uppsala och Sverige",
+      "url": "https://nowintown.se",
+      "areaServed": [
+        {
+          "@type": "City",
+          "name": "Uppsala",
+          "containedInPlace": {
+            "@type": "Country",
+            "name": "Sweden"
+          }
+        },
+        {
+          "@type": "Country",
+          "name": "Sweden"
+        }
+      ],
+      "serviceType": ["Event Discovery", "Activity Finder", "Event Listing"]
+    }
+    </script>
   </head>
 
   <body>
