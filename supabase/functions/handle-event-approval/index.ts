@@ -58,6 +58,24 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Check token expiration (7 days)
+    const TOKEN_EXPIRY_DAYS = 7;
+    const tokenCreatedAt = event.token_created_at ? new Date(event.token_created_at) : new Date(event.created_at);
+    const expiryDate = new Date(tokenCreatedAt.getTime() + TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+    
+    if (new Date() > expiryDate) {
+      console.log("Token expired for event:", event.id, "Created at:", tokenCreatedAt, "Expired at:", expiryDate);
+      return new Response(
+        `<!DOCTYPE html>
+        <html><head><title>Link Expired</title></head>
+        <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+          <h1>Link Expired</h1>
+          <p>This approval link has expired. Please use the admin dashboard to approve or reject this event.</p>
+        </body></html>`,
+        { status: 410, headers: { ...corsHeaders, "Content-Type": "text/html" } }
+      );
+    }
+
     if (event.status !== "pending") {
       return new Response(
         `<!DOCTYPE html>
@@ -72,12 +90,22 @@ const handler = async (req: Request): Promise<Response> => {
 
     const newStatus = action === "approve" ? "approved" : "rejected";
 
-    // Update event status
+    // Log the approval action
+    console.log("Processing event approval:", {
+      event_id: event.id,
+      action: action,
+      timestamp: new Date().toISOString(),
+      token_used: token.substring(0, 8) + "..." // Log partial token for audit
+    });
+
+    // Update event status and invalidate token (single-use)
     const { error: updateError } = await supabase
       .from("events")
       .update({
         status: newStatus,
         approved_at: action === "approve" ? new Date().toISOString() : null,
+        approval_token: null, // Invalidate token after use
+        token_created_at: null
       })
       .eq("id", event.id);
 
@@ -85,6 +113,8 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Update error:", updateError);
       throw new Error("Failed to update event status");
     }
+    
+    console.log("Event status updated successfully:", event.id, "->", newStatus);
 
     // Send notification email to organizer
     const statusText = action === "approve" ? "approved and published" : "rejected";
