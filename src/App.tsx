@@ -19,6 +19,7 @@ import EventDetails from "./pages/EventDetails";
 import EditEvent from "./pages/EditEvent";
 import DataIntegrity from "./pages/DataIntegrity";
 import Terms from "./pages/Terms";
+import CityEvents from "./pages/CityEvents";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,7 +44,7 @@ const App = () => (
                 <Route path="/manage-events" element={<ManageEvents />} />
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/event/:id" element={<EventDetails />} />
-                <Route path="/events/:id" element={<EventDetails />} />
+                <Route path="/events/:city" element={<CityEvents />} />
                 <Route path="/edit-event/:id" element={<EditEvent />} />
                 <Route path="/data-integrity" element={<DataIntegrity />} />
                 <Route path="/terms" element={<Terms />} />

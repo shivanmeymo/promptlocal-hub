@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <!-- Main Pages -->
+  <url>
+    <loc>https://nowintown.se/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nowintown.se/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://nowintown.se/?lang=sv"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nowintown.se/"/>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://nowintown.se/about</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nowintown.se/about?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://nowintown.se/about?lang=sv"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nowintown.se/contact</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nowintown.se/contact?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://nowintown.se/contact?lang=sv"/>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nowintown.se/create-event</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nowintown.se/terms</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <!-- City Landing Pages - Uppsala -->
+  <url>
+    <loc>https://nowintown.se/events/uppsala</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nowintown.se/events/uppsala?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://nowintown.se/events/uppsala?lang=sv"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nowintown.se/events/uppsala"/>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- City Landing Pages - Stockholm -->
+  <url>
+    <loc>https://nowintown.se/events/stockholm</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nowintown.se/events/stockholm?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://nowintown.se/events/stockholm?lang=sv"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nowintown.se/events/stockholm"/>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- City Landing Pages - Göteborg -->
+  <url>
+    <loc>https://nowintown.se/events/goteborg</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nowintown.se/events/goteborg?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://nowintown.se/events/goteborg?lang=sv"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nowintown.se/events/goteborg"/>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- City Landing Pages - Malmö -->
+  <url>
+    <loc>https://nowintown.se/events/malmo</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nowintown.se/events/malmo?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://nowintown.se/events/malmo?lang=sv"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nowintown.se/events/malmo"/>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- City Landing Pages - Lund -->
+  <url>
+    <loc>https://nowintown.se/events/lund</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nowintown.se/events/lund?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://nowintown.se/events/lund?lang=sv"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nowintown.se/events/lund"/>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- City Landing Pages - Linköping -->
+  <url>
+    <loc>https://nowintown.se/events/linkoping</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nowintown.se/events/linkoping?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="sv" href="https://nowintown.se/events/linkoping?lang=sv"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nowintown.se/events/linkoping"/>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>
