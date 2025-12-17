@@ -19,7 +19,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
-  updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<{ error: Error | null }>;
   deleteAccount: () => Promise<{ error: Error | null }>;
   refreshProfile: () => Promise<void>;
 }
@@ -120,7 +120,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setProfile(null);
   };
 
-  const updatePassword = async (newPassword: string) => {
+  const updatePassword = async (currentPassword: string, newPassword: string) => {
+    if (!user?.email) {
+      return { error: new Error('No user email available') };
+    }
+
+    // Verify current password first (server-side verification)
+    const { error: verifyError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: currentPassword,
+    });
+
+    if (verifyError) {
+      return { error: new Error('Current password is incorrect') };
+    }
+
+    // Now update to new password
     const { error } = await supabase.auth.updateUser({
       password: newPassword,
     });
