@@ -256,26 +256,6 @@ const CityEvents: React.FC = () => {
       </Helmet>
 
       <main className="container mx-auto px-4 py-8" role="main" aria-label={`${cityDisplayName} events`}>
-        {/* Breadcrumb Navigation */}
-        <nav aria-label="Breadcrumb" className="mb-6">
-          <ol className="flex items-center gap-2 text-sm text-muted-foreground">
-            <li>
-              <Link to="/" className="hover:text-primary transition-colors">
-                {language === 'sv' ? 'Hem' : 'Home'}
-              </Link>
-            </li>
-            <li aria-hidden="true">/</li>
-            <li>
-              <Link to="/" className="hover:text-primary transition-colors">
-                {language === 'sv' ? 'Evenemang' : 'Events'}
-              </Link>
-            </li>
-            <li aria-hidden="true">/</li>
-            <li aria-current="page" className="text-foreground font-medium">
-              {cityDisplayName}
-            </li>
-          </ol>
-        </nav>
 
         {/* Hero Section */}
         <header className="mb-8">
@@ -327,14 +307,14 @@ const CityEvents: React.FC = () => {
           </div>
         </nav>
 
-        {/* Filters */}
         <section aria-label={language === 'sv' ? 'Filter' : 'Filters'} className="mb-8">
           <EventFilters
             onSearchChange={setSearchTerm}
             onDateChange={setDateFilter}
-            onLocationChange={() => {}} // Location is fixed for city page
+            onLocationChange={() => {}}
             onCategoryChange={setCategoryFilter}
             onFreeOnlyChange={setFreeOnly}
+            hideLocation={true}
           />
         </section>
 
