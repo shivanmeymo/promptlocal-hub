@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, MapPin, User, Mail, Globe, Share2, Copy, Check, Edit2 } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, MapPin, User, Globe, Share2, Copy, Check, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Layout } from '@/components/layout/Layout';
 import { AddToCalendar } from '@/components/events/AddToCalendar';
+import { ContactOrganizerDialog } from '@/components/events/ContactOrganizerDialog';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -29,7 +30,6 @@ interface Event {
   image_url: string | null;
   status: string;
   organizer_name: string;
-  organizer_email: string;
   organizer_description: string | null;
   organizer_website?: string | null;
   is_online?: boolean;
@@ -55,13 +55,14 @@ const EventDetails: React.FC = () => {
   }, [id]);
 
   const fetchEvent = async () => {
+    // Use public_events view which excludes organizer_email for public access
     const { data, error } = await supabase
-      .from('events')
+      .from('public_events')
       .select('*')
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
-    if (error) {
+    if (error || !data) {
       toast({
         title: t('common.error'),
         description: language === 'sv' ? 'Event hittades inte' : 'Event not found',
@@ -298,12 +299,6 @@ const EventDetails: React.FC = () => {
                       {event.organizer_description}
                     </p>
                   )}
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Mail className="w-4 h-4" />
-                    <a href={`mailto:${event.organizer_email}`} className="hover:text-primary">
-                      {event.organizer_email}
-                    </a>
-                  </div>
                   {event.organizer_website && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Globe className="w-4 h-4" />
@@ -317,6 +312,13 @@ const EventDetails: React.FC = () => {
                       </a>
                     </div>
                   )}
+                  <div className="pt-2">
+                    <ContactOrganizerDialog 
+                      eventId={event.id}
+                      eventTitle={event.title}
+                      organizerName={event.organizer_name}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
