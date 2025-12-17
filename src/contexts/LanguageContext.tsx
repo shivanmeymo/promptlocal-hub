@@ -144,6 +144,13 @@ const translations: Translations = {
   'auth.hasAccount': { en: 'Already have an account?', sv: 'Har du redan ett konto?' },
   'auth.welcome': { en: 'Welcome to NowInTown', sv: 'Välkommen till NowInTown' },
   'auth.welcomeBack': { en: 'Welcome back!', sv: 'Välkommen tillbaka!' },
+  'auth.forgotPassword': { en: 'Forgot your password?', sv: 'Glömt ditt lösenord?' },
+  'auth.resetPassword': { en: 'Reset Password', sv: 'Återställ lösenord' },
+  'auth.resetDescription': { en: 'Enter your email address and we will send you a link to reset your password.', sv: 'Ange din e-postadress så skickar vi dig en länk för att återställa ditt lösenord.' },
+  'auth.sendResetLink': { en: 'Send Reset Link', sv: 'Skicka återställningslänk' },
+  'auth.resetEmailSent': { en: 'Reset email sent!', sv: 'Återställningsmail skickat!' },
+  'auth.checkInbox': { en: 'Please check your inbox for the password reset link.', sv: 'Vänligen kontrollera din inkorg för återställningslänken.' },
+  'auth.backToSignIn': { en: 'Back to Sign In', sv: 'Tillbaka till inloggning' },
 
   // Footer
   'footer.tagline': { en: 'Discover amazing events and activities across Sweden.', sv: 'Upptäck fantastiska event och aktiviteter över hela Sverige.' },
