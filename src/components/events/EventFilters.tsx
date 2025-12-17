@@ -32,7 +32,14 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
   onKeywordsChange,
 }) => {
   const { t, language } = useLanguage();
-  const { user } = useAuth();
+  // Safely try to get auth context - component may be used outside AuthProvider
+  let user = null;
+  try {
+    const auth = useAuth();
+    user = auth?.user;
+  } catch {
+    // Auth context not available, continue without user
+  }
   const { toast } = useToast();
   const [freeOnly, setFreeOnly] = useState(false);
   const [keywords, setKeywords] = useState<string[]>([]);
