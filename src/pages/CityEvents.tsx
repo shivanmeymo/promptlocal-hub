@@ -45,6 +45,7 @@ const cities: CityConfig[] = [
   { name: 'Malmö', nameSv: 'Malmö', slug: 'malmo', region: 'Skåne', regionSv: 'Skåne län' },
   { name: 'Lund', nameSv: 'Lund', slug: 'lund', region: 'Skåne', regionSv: 'Skåne län' },
   { name: 'Linköping', nameSv: 'Linköping', slug: 'linkoping', region: 'Östergötland', regionSv: 'Östergötlands län' },
+  { name: 'Umeå', nameSv: 'Umeå', slug: 'umea', region: 'Västerbotten', regionSv: 'Västerbottens län' },
 ];
 
 const CityEvents: React.FC = () => {
