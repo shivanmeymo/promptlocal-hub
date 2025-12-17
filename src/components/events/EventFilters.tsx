@@ -227,9 +227,6 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
               <Button variant="outline" className="w-full gap-2">
                 <Bell className="w-4 h-4" />
                 {t('search.notify')}
-                {getActiveFiltersCount() > 0 && (
-                  <Badge variant="secondary" className="ml-1">{getActiveFiltersCount()}</Badge>
-                )}
               </Button>
             </DialogTrigger>
             <DialogContent className="bg-background">
