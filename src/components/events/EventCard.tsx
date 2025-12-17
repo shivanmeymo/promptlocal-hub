@@ -66,80 +66,100 @@ export const EventCard: React.FC<EventCardProps> = ({ event, isOwner, onEdit }) 
   };
 
   return (
-    <Link to={`/event/${event.id}`}>
-      <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300 animate-fade-in cursor-pointer h-full">
-        <CardHeader className="p-0 relative">
-          <div className="aspect-video bg-muted relative overflow-hidden">
-            {event.image_url ? (
-              <img
-                src={event.image_url}
-                alt={event.title}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                <span className="text-4xl">🎉</span>
+    <Link 
+      to={`/event/${event.id}`}
+      aria-label={`${event.title} - ${formatDate(event.start_date)} ${language === 'sv' ? 'i' : 'in'} ${event.location}`}
+    >
+      <article className="h-full">
+        <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300 animate-fade-in cursor-pointer h-full focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2">
+          <CardHeader className="p-0 relative">
+            <figure className="aspect-video bg-muted relative overflow-hidden m-0">
+              {event.image_url ? (
+                <img
+                  src={event.image_url}
+                  alt={`${language === 'sv' ? 'Bild för' : 'Image for'} ${event.title}`}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <div 
+                  className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center"
+                  role="img"
+                  aria-label={language === 'sv' ? 'Standardbild för evenemang' : 'Default event image'}
+                >
+                  <span className="text-4xl" aria-hidden="true">🎉</span>
+                </div>
+              )}
+              <Badge className={`absolute top-3 right-3 ${getCategoryColor(event.category)}`}>
+                {getCategoryLabel(event.category)}
+              </Badge>
+              {isOwner && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="absolute top-3 left-3 focus:ring-2 focus:ring-offset-2"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onEdit?.();
+                  }}
+                  aria-label={`${t('events.edit')} ${event.title}`}
+                >
+                  <Edit2 className="w-4 h-4 mr-1" aria-hidden="true" />
+                  {t('events.edit')}
+                </Button>
+              )}
+            </figure>
+          </CardHeader>
+          <CardContent className="p-4">
+            <h3 className="font-display font-semibold text-lg mb-2 line-clamp-2">
+              {event.title}
+            </h3>
+            
+            <dl className="space-y-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <dt className="sr-only">{language === 'sv' ? 'Datum och tid' : 'Date and time'}</dt>
+                <Calendar className="w-4 h-4 text-accent" aria-hidden="true" />
+                <dd>
+                  <time dateTime={`${event.start_date}T${event.start_time}`}>
+                    {formatDate(event.start_date)} {language === 'sv' ? 'kl' : 'at'} {formatTime(event.start_time)}
+                  </time>
+                </dd>
               </div>
-            )}
-            <Badge className={`absolute top-3 right-3 ${getCategoryColor(event.category)}`}>
-              {getCategoryLabel(event.category)}
-            </Badge>
-            {isOwner && (
-              <Button
-                size="sm"
-                variant="secondary"
-                className="absolute top-3 left-3"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onEdit?.();
-                }}
-              >
-                <Edit2 className="w-4 h-4 mr-1" />
-                {t('events.edit')}
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="p-4">
-          <h3 className="font-display font-semibold text-lg mb-2 line-clamp-2">
-            {event.title}
-          </h3>
-          
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-accent" />
-              <span>{formatDate(event.start_date)} {language === 'sv' ? 'kl' : 'at'} {formatTime(event.start_time)}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-accent" />
-              <span>{event.location}</span>
-            </div>
-            {event.organizer_name && (
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-muted-foreground">
-                  {language === 'sv' ? 'Av' : 'By'} {event.organizer_name}
-                </span>
+              <div className="flex items-center gap-2">
+                <dt className="sr-only">{language === 'sv' ? 'Plats' : 'Location'}</dt>
+                <MapPin className="w-4 h-4 text-accent" aria-hidden="true" />
+                <dd>{event.location}</dd>
               </div>
-            )}
-          </div>
+              {event.organizer_name && (
+                <div className="flex items-center gap-2 text-xs">
+                  <dt className="sr-only">{language === 'sv' ? 'Arrangör' : 'Organizer'}</dt>
+                  <dd className="text-muted-foreground">
+                    {language === 'sv' ? 'Av' : 'By'} {event.organizer_name}
+                  </dd>
+                </div>
+              )}
+            </dl>
 
-          <div className="mt-3 flex items-center justify-between">
-            {event.is_free ? (
-              <Badge variant="secondary" className="bg-success/10 text-success">
-                {t('search.free')}
-              </Badge>
-            ) : (
-              <span className="font-semibold text-primary">{event.price} SEK</span>
-            )}
-            {event.status === 'pending' && (
-              <Badge variant="outline" className="text-warning border-warning">
-                {t('events.pending')}
-              </Badge>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            <div className="mt-3 flex items-center justify-between">
+              {event.is_free ? (
+                <Badge variant="secondary" className="bg-success/10 text-success">
+                  {t('search.free')}
+                </Badge>
+              ) : (
+                <span className="font-semibold text-primary" aria-label={`${language === 'sv' ? 'Pris' : 'Price'}: ${event.price} SEK`}>
+                  {event.price} SEK
+                </span>
+              )}
+              {event.status === 'pending' && (
+                <Badge variant="outline" className="text-warning border-warning">
+                  {t('events.pending')}
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </article>
     </Link>
   );
 };
