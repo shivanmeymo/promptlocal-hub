@@ -77,10 +77,25 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Generate new token and set creation timestamp for expiration tracking
+    const newToken = crypto.randomUUID();
+    const { error: tokenUpdateError } = await supabase
+      .from("events")
+      .update({
+        approval_token: newToken,
+        token_created_at: new Date().toISOString()
+      })
+      .eq("id", event_id);
+
+    if (tokenUpdateError) {
+      console.error("Error updating approval token:", tokenUpdateError);
+      throw new Error("Failed to generate approval token");
+    }
+
     const siteUrl = Deno.env.get("SITE_URL") || "https://your-site.lovable.app";
     const functionUrl = `${supabaseUrl}/functions/v1/handle-event-approval`;
-    const approveUrl = `${functionUrl}?token=${event.approval_token}&action=approve`;
-    const rejectUrl = `${functionUrl}?token=${event.approval_token}&action=reject`;
+    const approveUrl = `${functionUrl}?token=${newToken}&action=approve`;
+    const rejectUrl = `${functionUrl}?token=${newToken}&action=reject`;
 
     // Send notification to admin with approve/reject buttons
     const adminEmailResponse = await resend.emails.send({
@@ -142,6 +157,8 @@ const handler = async (req: Request): Promise<Response> => {
 
           <p style="margin-top: 30px; color: #9ca3af; font-size: 12px; text-align: center;">
             Or review in the <a href="${siteUrl}/admin" style="color: #4F46E5;">Admin Dashboard</a>
+            <br><br>
+            <em>Note: These approval links expire in 7 days and can only be used once.</em>
           </p>
         </div>
       `,

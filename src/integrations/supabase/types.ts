@@ -123,6 +123,7 @@ export type Database = {
           start_time: string
           status: Database["public"]["Enums"]["event_status"]
           title: string
+          token_created_at: string | null
           updated_at: string
           user_id: string
         }
@@ -153,6 +154,7 @@ export type Database = {
           start_time: string
           status?: Database["public"]["Enums"]["event_status"]
           title: string
+          token_created_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -183,6 +185,7 @@ export type Database = {
           start_time?: string
           status?: Database["public"]["Enums"]["event_status"]
           title?: string
+          token_created_at?: string | null
           updated_at?: string
           user_id?: string
         }
