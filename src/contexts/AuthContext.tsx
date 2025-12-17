@@ -131,19 +131,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const deleteAccount = async () => {
     if (!user) return { error: new Error('No user logged in') };
 
-    // Delete user's events first
-    await supabase.from('events').delete().eq('user_id', user.id);
-    
-    // Delete profile
-    await supabase.from('profiles').delete().eq('user_id', user.id);
-    
-    // Delete user roles
-    await supabase.from('user_roles').delete().eq('user_id', user.id);
+    try {
+      // Call edge function to properly delete all user data including auth.users
+      const { error } = await supabase.functions.invoke('delete-user-account');
+      
+      if (error) {
+        console.error('Error deleting account:', error);
+        return { error: new Error('Failed to delete account') };
+      }
 
-    // Sign out
-    await signOut();
+      // Clear local state
+      setUser(null);
+      setSession(null);
+      setProfile(null);
 
-    return { error: null };
+      return { error: null };
+    } catch (err) {
+      console.error('Error deleting account:', err);
+      return { error: err as Error };
+    }
   };
 
   const refreshProfile = async () => {
