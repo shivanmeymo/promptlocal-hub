@@ -153,11 +153,104 @@ const EventDetails: React.FC = () => {
     return null;
   }
 
+  // Generate schema.org Event structured data
+  const eventJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    "name": event.title,
+    "description": event.description,
+    "startDate": `${event.start_date}T${event.start_time}`,
+    "endDate": `${event.end_date}T${event.end_time}`,
+    "eventStatus": "https://schema.org/EventScheduled",
+    "eventAttendanceMode": event.is_online 
+      ? "https://schema.org/OnlineEventAttendanceMode" 
+      : "https://schema.org/OfflineEventAttendanceMode",
+    "location": event.is_online ? {
+      "@type": "VirtualLocation",
+      "url": window.location.href
+    } : {
+      "@type": "Place",
+      "name": event.location,
+      "address": {
+        "@type": "PostalAddress",
+        "name": event.location,
+        "addressCountry": "SE"
+      }
+    },
+    "organizer": {
+      "@type": "Organization",
+      "name": event.organizer_name,
+      ...(event.organizer_website && { "url": event.organizer_website })
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": event.is_free ? "0" : (event.price?.toString() || "0"),
+      "priceCurrency": "SEK",
+      "availability": "https://schema.org/InStock",
+      "url": window.location.href
+    },
+    ...(event.image_url && { "image": event.image_url }),
+    "url": window.location.href
+  };
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": language === 'sv' ? "Hem" : "Home",
+        "item": "https://nowintown.se/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": language === 'sv' ? "Evenemang" : "Events",
+        "item": "https://nowintown.se/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": event.title,
+        "item": `https://nowintown.se/event/${event.id}`
+      }
+    ]
+  };
+
   return (
     <Layout>
       <Helmet>
-        <title>{event.title} - NowInTown</title>
+        <title>{event.title} | NowInTown - {language === 'sv' ? 'Evenemang i Sverige' : 'Events in Sweden'}</title>
         <meta name="description" content={event.description.slice(0, 160)} />
+        <meta 
+          name="keywords" 
+          content={`${event.title}, ${event.category}, ${event.location}, ${language === 'sv' ? 'evenemang, aktivitet, Sverige' : 'event, activity, Sweden'}`} 
+        />
+        <link rel="canonical" href={`https://nowintown.se/event/${event.id}`} />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content={event.title} />
+        <meta property="og:description" content={event.description.slice(0, 160)} />
+        <meta property="og:type" content="event" />
+        <meta property="og:url" content={`https://nowintown.se/event/${event.id}`} />
+        {event.image_url && <meta property="og:image" content={event.image_url} />}
+        <meta property="og:locale" content={language === 'sv' ? 'sv_SE' : 'en_US'} />
+        <meta property="og:site_name" content="NowInTown" />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={event.title} />
+        <meta name="twitter:description" content={event.description.slice(0, 160)} />
+        {event.image_url && <meta name="twitter:image" content={event.image_url} />}
+        
+        {/* Event specific meta */}
+        <meta property="event:start_time" content={`${event.start_date}T${event.start_time}`} />
+        <meta property="event:end_time" content={`${event.end_date}T${event.end_time}`} />
+        
+        {/* JSON-LD Structured Data */}
+        <script type="application/ld+json">{JSON.stringify(eventJsonLd)}</script>
+        <script type="application/ld+json">{JSON.stringify(breadcrumbJsonLd)}</script>
       </Helmet>
 
       <div className="container mx-auto px-4 py-8">
