@@ -70,11 +70,20 @@ const CityEvents: React.FC = () => {
     const fetchEvents = async () => {
       setLoading(true);
       try {
+        // Search for both Swedish and English city names
+        const searchTerms = [cityConfig.nameSv];
+        if (cityConfig.name !== cityConfig.nameSv) {
+          searchTerms.push(cityConfig.name);
+        }
+        
+        // Build OR query for multiple city name variations
+        const orFilter = searchTerms.map(term => `location.ilike.%${term}%`).join(',');
+        
         const { data, error } = await supabase
           .from('public_events')
           .select('*')
           .eq('status', 'approved')
-          .ilike('location', `%${cityConfig.nameSv}%`)
+          .or(orFilter)
           .gte('start_date', new Date().toISOString().split('T')[0])
           .order('start_date', { ascending: true });
 
