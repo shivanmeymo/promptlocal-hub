@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Search, Calendar, MapPin, Bell, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -18,11 +18,9 @@ interface EventFiltersProps {
   onCategoryChange: (value: string) => void;
   onFreeOnlyChange: (value: boolean) => void;
   onKeywordsChange?: (keywords: string[]) => void;
-  hideLocation?: boolean;
-  initialLocation?: string;
 }
 
-const locations = ['Uppsala', 'Stockholm', 'Göteborg', 'Malmö', 'Lund', 'Linköping', 'Umeå'];
+const locations = ['Uppsala', 'Stockholm', 'Göteborg', 'Malmö', 'Lund', 'Linköping'];
 const categories = ['music', 'sports', 'art', 'food', 'business', 'education', 'community', 'other'];
 
 export const EventFilters: React.FC<EventFiltersProps> = ({
@@ -32,8 +30,6 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
   onCategoryChange,
   onFreeOnlyChange,
   onKeywordsChange,
-  hideLocation = false,
-  initialLocation = '',
 }) => {
   const { t, language } = useLanguage();
   // Safely try to get auth context - component may be used outside AuthProvider
@@ -52,14 +48,9 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
   const [notifyEmail, setNotifyEmail] = useState('');
   const [selectedFilters, setSelectedFilters] = useState({
     date: '',
-    location: initialLocation,
+    location: '',
     category: '',
   });
-
-  // Sync location when initialLocation prop changes (e.g., from hero city selection)
-  useEffect(() => {
-    setSelectedFilters(f => ({ ...f, location: initialLocation }));
-  }, [initialLocation]);
 
   const handleFreeOnlyChange = (checked: boolean) => {
     setFreeOnly(checked);
@@ -143,7 +134,7 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
 
   return (
     <div className="bg-card rounded-xl shadow-sm border border-border p-4 md:p-6">
-      <div className={`grid grid-cols-1 md:grid-cols-2 ${hideLocation ? 'lg:grid-cols-5' : 'lg:grid-cols-6'} gap-4 items-end`}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
         {/* Search */}
         <div className="lg:col-span-1">
           <Label className="flex items-center gap-2 mb-2">
@@ -178,28 +169,26 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
           </Select>
         </div>
 
-        {/* Location - hidden on city pages */}
-        {!hideLocation && (
-          <div>
-            <Label className="flex items-center gap-2 mb-2">
-              <MapPin className="w-4 h-4" />
-              {t('search.location')}
-            </Label>
-            <Select onValueChange={handleLocationChange} value={selectedFilters.location || 'all'}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('search.select')} />
-              </SelectTrigger>
-              <SelectContent className="bg-popover">
-                <SelectItem value="all">{language === 'sv' ? 'Alla platser' : 'All locations'}</SelectItem>
-                {locations.map((loc) => (
-                  <SelectItem key={loc} value={loc.toLowerCase()}>
-                    {loc}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+        {/* Location */}
+        <div>
+          <Label className="flex items-center gap-2 mb-2">
+            <MapPin className="w-4 h-4" />
+            {t('search.location')}
+          </Label>
+          <Select onValueChange={handleLocationChange} value={selectedFilters.location || 'all'}>
+            <SelectTrigger>
+              <SelectValue placeholder={t('search.select')} />
+            </SelectTrigger>
+            <SelectContent className="bg-popover">
+              <SelectItem value="all">{language === 'sv' ? 'Alla platser' : 'All locations'}</SelectItem>
+              {locations.map((loc) => (
+                <SelectItem key={loc} value={loc.toLowerCase()}>
+                  {loc}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Category */}
         <div>
@@ -238,9 +227,6 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
               <Button variant="outline" className="w-full gap-2">
                 <Bell className="w-4 h-4" />
                 {t('search.notify')}
-                {getActiveFiltersCount() > 0 && (
-                  <Badge variant="secondary" className="ml-1">{getActiveFiltersCount()}</Badge>
-                )}
               </Button>
             </DialogTrigger>
             <DialogContent className="bg-background">
