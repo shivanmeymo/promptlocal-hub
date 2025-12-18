@@ -5,10 +5,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Cloudflare Turnstile secret key - using test key for development
-// In production, replace with actual secret key stored in secrets
-const TURNSTILE_SECRET_KEY = Deno.env.get("TURNSTILE_SECRET_KEY") || "1x0000000000000000000000000000000AA"; // Test secret (always passes)
-
 interface VerifyRequest {
   token: string;
 }
@@ -21,6 +17,22 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    const TURNSTILE_SECRET_KEY = Deno.env.get("TURNSTILE_SECRET_KEY");
+    
+    // Warn if using test key in production
+    if (!TURNSTILE_SECRET_KEY) {
+      console.error("TURNSTILE_SECRET_KEY not configured - CAPTCHA verification disabled");
+      return new Response(
+        JSON.stringify({ success: false, error: "CAPTCHA not configured" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+    
+    // Detect test keys and log warning
+    if (TURNSTILE_SECRET_KEY.startsWith("1x0")) {
+      console.warn("WARNING: Using Cloudflare Turnstile test key - replace before production!");
+    }
+
     const { token }: VerifyRequest = await req.json();
 
     if (!token) {
@@ -46,7 +58,7 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     const result = await verifyResponse.json();
-    console.log("Turnstile verification result:", result);
+    console.log("Turnstile verification result:", result.success ? "passed" : "failed");
 
     if (result.success) {
       return new Response(
@@ -55,14 +67,14 @@ const handler = async (req: Request): Promise<Response> => {
       );
     } else {
       return new Response(
-        JSON.stringify({ success: false, error: "Captcha verification failed", codes: result["error-codes"] }),
+        JSON.stringify({ success: false, error: "Captcha verification failed" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
   } catch (error: any) {
     console.error("Error in verify-captcha:", error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: "An error occurred" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,6 +23,69 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authentication
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      console.log("No authorization header provided");
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    
+    // Create client with user's auth to verify identity
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      console.log("Authentication failed:", authError?.message);
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("Authenticated user:", user.id);
+
+    // Create service client for atomic rate limiting
+    const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Atomic rate limiting check
+    const today = new Date().toISOString().split('T')[0];
+    const { data: rateLimitResult, error: rateLimitError } = await supabaseService.rpc('increment_ai_usage', {
+      p_user_id: user.id,
+      p_date: today,
+      p_max_limit: 4
+    });
+
+    if (rateLimitError) {
+      console.error("Rate limit check failed:", rateLimitError);
+      return new Response(
+        JSON.stringify({ error: 'Rate limit check failed' }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!rateLimitResult.allowed) {
+      console.log("Rate limit exceeded for user:", user.id, "count:", rateLimitResult.count);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Daily AI generation limit reached',
+          remaining: 0,
+          count: rateLimitResult.count
+        }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("Rate limit check passed. Count:", rateLimitResult.count, "Remaining:", rateLimitResult.remaining);
+
     const body = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
@@ -99,13 +163,16 @@ Keep it professional yet friendly. Do not include the title in the description. 
     const data = await response.json();
     const description = data.choices?.[0]?.message?.content || "";
 
-    return new Response(JSON.stringify({ description }), {
+    return new Response(JSON.stringify({ 
+      description,
+      remaining: rateLimitResult.remaining
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("generate-event-description error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: "An error occurred" }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

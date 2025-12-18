@@ -13,8 +13,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
-// Cloudflare Turnstile site key - using test key for development
-const TURNSTILE_SITE_KEY = "1x00000000000000000000AA"; // Test key (always passes)
+// Cloudflare Turnstile site key - uses environment variable for production
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || "1x00000000000000000000AA";
 
 declare global {
   interface Window {
