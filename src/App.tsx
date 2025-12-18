@@ -14,6 +14,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import CreateEvent from "./pages/CreateEvent";
 import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import ManageEvents from "./pages/ManageEvents";
 import AdminDashboard from "./pages/AdminDashboard";
 import EventDetails from "./pages/EventDetails";
@@ -45,6 +46,7 @@ const App = () => (
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/create-event" element={<CreateEvent />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/settings" element={<Settings />} />
                 <Route path="/manage-events" element={<ManageEvents />} />
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/event/:id" element={<EventDetails />} />
