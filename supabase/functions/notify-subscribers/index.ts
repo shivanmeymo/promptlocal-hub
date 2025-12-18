@@ -107,6 +107,8 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Send emails to matching subscribers
     const emailPromises = matchingSubscriptions.map(async (sub) => {
+      const unsubscribeUrl = `${siteUrl}/unsubscribe?id=${sub.id}&email=${encodeURIComponent(sub.email)}`;
+      
       try {
         await resend.emails.send({
           from: "NowInTown <onboarding@resend.dev>",
@@ -141,16 +143,20 @@ const handler = async (req: Request): Promise<Response> => {
               </div>
 
               <div style="text-align: center; margin-top: 30px;">
-                <a href="${siteUrl}/events/${event.id}" 
+                <a href="${siteUrl}/event/${event.id}" 
                    style="background-color: #4F46E5; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
                   View Event Details
                 </a>
               </div>
 
-              <p style="margin-top: 30px; color: #9ca3af; font-size: 12px; text-align: center;">
+              <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;" />
+
+              <p style="color: #9ca3af; font-size: 12px; text-align: center;">
                 You received this email because you subscribed to event notifications on NowInTown.
                 <br><br>
                 <a href="${siteUrl}" style="color: #4F46E5;">Visit NowInTown</a>
+                &nbsp;|&nbsp;
+                <a href="${unsubscribeUrl}" style="color: #6b7280;">Unsubscribe</a>
               </p>
             </div>
           `,

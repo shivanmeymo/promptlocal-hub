@@ -20,6 +20,7 @@ import EditEvent from "./pages/EditEvent";
 import DataIntegrity from "./pages/DataIntegrity";
 import Terms from "./pages/Terms";
 import CityEvents from "./pages/CityEvents";
+import Unsubscribe from "./pages/Unsubscribe";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const App = () => (
                 <Route path="/edit-event/:id" element={<EditEvent />} />
                 <Route path="/data-integrity" element={<DataIntegrity />} />
                 <Route path="/terms" element={<Terms />} />
+                <Route path="/unsubscribe" element={<Unsubscribe />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
