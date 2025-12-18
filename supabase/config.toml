@@ -23,3 +23,12 @@ verify_jwt = true
 
 [functions.contact-organizer]
 verify_jwt = false
+
+[functions.notify-subscribers]
+verify_jwt = false
+
+[functions.fetch-tickster-events]
+verify_jwt = false
+
+[functions.verify-captcha]
+verify_jwt = false

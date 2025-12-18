@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface EventFiltersProps {
   onSearchChange: (value: string) => void;
@@ -46,6 +47,7 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
   const [searchInput, setSearchInput] = useState('');
   const [notifyDialogOpen, setNotifyDialogOpen] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState({
     date: '',
     location: '',
@@ -104,22 +106,70 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
     }
 
     const email = user?.email || notifyEmail;
-    const filterSummary = [];
-    if (selectedFilters.date) filterSummary.push(`${language === 'sv' ? 'Datum' : 'Date'}: ${selectedFilters.date}`);
-    if (selectedFilters.location) filterSummary.push(`${language === 'sv' ? 'Plats' : 'Location'}: ${selectedFilters.location}`);
-    if (selectedFilters.category) filterSummary.push(`${language === 'sv' ? 'Kategori' : 'Category'}: ${t(`category.${selectedFilters.category}`)}`);
-    if (freeOnly) filterSummary.push(language === 'sv' ? 'Endast gratis' : 'Free only');
-    if (keywords.length > 0) filterSummary.push(`${language === 'sv' ? 'Sökord' : 'Keywords'}: ${keywords.join(', ')}`);
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        title: language === 'sv' ? 'Ogiltig e-post' : 'Invalid email',
+        description: language === 'sv' ? 'Ange en giltig e-postadress.' : 'Please enter a valid email address.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-    // In a real implementation, this would save to database
-    toast({
-      title: language === 'sv' ? 'Avisering aktiverad!' : 'Notification enabled!',
-      description: language === 'sv' 
-        ? `Du kommer få aviseringar till ${email}${filterSummary.length > 0 ? ` för: ${filterSummary.join(', ')}` : ''}`
-        : `You will receive notifications at ${email}${filterSummary.length > 0 ? ` for: ${filterSummary.join(', ')}` : ''}`,
-    });
-    setNotifyDialogOpen(false);
-    setNotifyEmail('');
+    setIsSubmitting(true);
+
+    try {
+      // Build filters object with current selections
+      const filters = {
+        location: selectedFilters.location || null,
+        category: selectedFilters.category || null,
+        freeOnly: freeOnly || null,
+        keywords: keywords.length > 0 ? keywords : null,
+        date: selectedFilters.date || null,
+      };
+
+      // Save to database
+      const { error } = await supabase
+        .from('event_notifications')
+        .insert({
+          email: email,
+          user_id: user?.id || null,
+          filters: filters,
+          is_active: true,
+        });
+
+      if (error) {
+        console.error('Error saving notification:', error);
+        throw error;
+      }
+
+      const filterSummary = [];
+      if (selectedFilters.date) filterSummary.push(`${language === 'sv' ? 'Datum' : 'Date'}: ${selectedFilters.date}`);
+      if (selectedFilters.location) filterSummary.push(`${language === 'sv' ? 'Plats' : 'Location'}: ${selectedFilters.location}`);
+      if (selectedFilters.category) filterSummary.push(`${language === 'sv' ? 'Kategori' : 'Category'}: ${t(`category.${selectedFilters.category}`)}`);
+      if (freeOnly) filterSummary.push(language === 'sv' ? 'Endast gratis' : 'Free only');
+      if (keywords.length > 0) filterSummary.push(`${language === 'sv' ? 'Sökord' : 'Keywords'}: ${keywords.join(', ')}`);
+
+      toast({
+        title: language === 'sv' ? 'Avisering aktiverad!' : 'Notification enabled!',
+        description: language === 'sv' 
+          ? `Du kommer få aviseringar till ${email}${filterSummary.length > 0 ? ` för: ${filterSummary.join(', ')}` : ' för alla nya event'}`
+          : `You will receive notifications at ${email}${filterSummary.length > 0 ? ` for: ${filterSummary.join(', ')}` : ' for all new events'}`,
+      });
+      setNotifyDialogOpen(false);
+      setNotifyEmail('');
+    } catch (error: any) {
+      console.error('Failed to save notification:', error);
+      toast({
+        title: language === 'sv' ? 'Något gick fel' : 'Something went wrong',
+        description: language === 'sv' ? 'Kunde inte spara aviseringen. Försök igen.' : 'Could not save notification. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const getActiveFiltersCount = () => {
@@ -285,12 +335,14 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => setNotifyDialogOpen(false)}>
+                <Button variant="outline" onClick={() => setNotifyDialogOpen(false)} disabled={isSubmitting}>
                   {language === 'sv' ? 'Avbryt' : 'Cancel'}
                 </Button>
-                <Button onClick={handleNotify}>
+                <Button onClick={handleNotify} disabled={isSubmitting}>
                   <Bell className="w-4 h-4 mr-2" />
-                  {language === 'sv' ? 'Aktivera aviseringar' : 'Enable Notifications'}
+                  {isSubmitting 
+                    ? (language === 'sv' ? 'Sparar...' : 'Saving...') 
+                    : (language === 'sv' ? 'Aktivera aviseringar' : 'Enable Notifications')}
                 </Button>
               </DialogFooter>
             </DialogContent>

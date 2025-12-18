@@ -116,6 +116,26 @@ const handler = async (req: Request): Promise<Response> => {
     
     console.log("Event status updated successfully:", event.id, "->", newStatus);
 
+    // If approved, trigger subscriber notifications
+    if (action === "approve") {
+      try {
+        console.log("Triggering subscriber notifications for event:", event.id);
+        const notifyResponse = await fetch(`${supabaseUrl}/functions/v1/notify-subscribers`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${supabaseServiceKey}`,
+          },
+          body: JSON.stringify({ event_id: event.id }),
+        });
+        const notifyResult = await notifyResponse.json();
+        console.log("Subscriber notification result:", notifyResult);
+      } catch (notifyError) {
+        console.error("Failed to trigger subscriber notifications:", notifyError);
+        // Don't fail the approval if notifications fail
+      }
+    }
+
     // Send notification email to organizer
     const statusText = action === "approve" ? "approved and published" : "rejected";
     const statusTextSv = action === "approve" ? "godkänt och publicerat" : "avvisat";

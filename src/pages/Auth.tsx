@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, User, Chrome, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, User, Chrome, ArrowLeft, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,8 +13,28 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
+// Cloudflare Turnstile site key - using test key for development
+const TURNSTILE_SITE_KEY = "1x00000000000000000000AA"; // Test key (always passes)
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: string | HTMLElement, options: {
+        sitekey: string;
+        callback: (token: string) => void;
+        'error-callback'?: () => void;
+        'expired-callback'?: () => void;
+        theme?: 'light' | 'dark' | 'auto';
+        size?: 'normal' | 'compact';
+      }) => string;
+      reset: (widgetId: string) => void;
+      remove: (widgetId: string) => void;
+    };
+  }
+}
+
 const Auth: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { signIn, signUp, signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -27,6 +47,67 @@ const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaWidgetId, setCaptchaWidgetId] = useState<string | null>(null);
+
+  // Load Turnstile script
+  useEffect(() => {
+    if (document.getElementById('turnstile-script')) return;
+    
+    const script = document.createElement('script');
+    script.id = 'turnstile-script';
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+
+    return () => {
+      // Cleanup widget on unmount
+      if (captchaWidgetId && window.turnstile) {
+        window.turnstile.remove(captchaWidgetId);
+      }
+    };
+  }, []);
+
+  // Render Turnstile widget for signup
+  const renderCaptcha = useCallback(() => {
+    const container = document.getElementById('turnstile-container');
+    if (!container || !window.turnstile) return;
+    
+    // Clear existing widget
+    container.innerHTML = '';
+    
+    const widgetId = window.turnstile.render(container, {
+      sitekey: TURNSTILE_SITE_KEY,
+      callback: (token: string) => {
+        console.log('Captcha verified');
+        setCaptchaToken(token);
+      },
+      'error-callback': () => {
+        console.error('Captcha error');
+        setCaptchaToken(null);
+      },
+      'expired-callback': () => {
+        console.log('Captcha expired');
+        setCaptchaToken(null);
+      },
+      theme: 'auto',
+      size: 'normal',
+    });
+    
+    setCaptchaWidgetId(widgetId);
+  }, []);
+
+  // Re-render captcha when switching to signup tab
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (window.turnstile) {
+        renderCaptcha();
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [renderCaptcha]);
 
   // Redirect if already logged in
   React.useEffect(() => {
@@ -59,22 +140,66 @@ const Auth: React.FC = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    const { error } = await signUp(signupEmail, signupPassword, signupName);
-
-    if (error) {
+    
+    // Verify captcha
+    if (!captchaToken) {
       toast({
-        title: t('common.error'),
-        description: error.message,
+        title: language === 'sv' ? 'Verifiering krävs' : 'Verification required',
+        description: language === 'sv' ? 'Vänligen slutför captcha-verifieringen.' : 'Please complete the captcha verification.',
         variant: 'destructive',
       });
-    } else {
-      toast({
-        title: t('auth.welcome'),
-        description: 'Account created successfully!',
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Verify captcha token with backend
+      const { data: captchaResult, error: captchaError } = await supabase.functions.invoke('verify-captcha', {
+        body: { token: captchaToken },
       });
-      navigate('/');
+
+      if (captchaError || !captchaResult?.success) {
+        toast({
+          title: language === 'sv' ? 'Verifiering misslyckades' : 'Verification failed',
+          description: language === 'sv' ? 'Captcha-verifieringen misslyckades. Försök igen.' : 'Captcha verification failed. Please try again.',
+          variant: 'destructive',
+        });
+        // Reset captcha
+        if (captchaWidgetId && window.turnstile) {
+          window.turnstile.reset(captchaWidgetId);
+        }
+        setCaptchaToken(null);
+        setLoading(false);
+        return;
+      }
+
+      const { error } = await signUp(signupEmail, signupPassword, signupName);
+
+      if (error) {
+        toast({
+          title: t('common.error'),
+          description: error.message,
+          variant: 'destructive',
+        });
+        // Reset captcha on error
+        if (captchaWidgetId && window.turnstile) {
+          window.turnstile.reset(captchaWidgetId);
+        }
+        setCaptchaToken(null);
+      } else {
+        toast({
+          title: t('auth.welcome'),
+          description: 'Account created successfully!',
+        });
+        navigate('/');
+      }
+    } catch (error: any) {
+      toast({
+        title: t('common.error'),
+        description: error.message || 'An error occurred',
+        variant: 'destructive',
+      });
     }
 
     setLoading(false);
@@ -303,7 +428,19 @@ const Auth: React.FC = () => {
                       />
                     </div>
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  
+                  {/* Captcha Widget */}
+                  <div className="flex flex-col items-center gap-2">
+                    <div id="turnstile-container" className="min-h-[65px]" />
+                    {captchaToken && (
+                      <div className="flex items-center gap-1 text-sm text-green-600">
+                        <Shield className="w-4 h-4" />
+                        {language === 'sv' ? 'Verifierad' : 'Verified'}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <Button type="submit" className="w-full" disabled={loading || !captchaToken}>
                     {loading ? t('common.loading') : t('auth.signUp')}
                   </Button>
                 </form>
