@@ -21,6 +21,7 @@ import DataIntegrity from "./pages/DataIntegrity";
 import Terms from "./pages/Terms";
 import CityEvents from "./pages/CityEvents";
 import Unsubscribe from "./pages/Unsubscribe";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ const App = () => (
                 <Route path="/data-integrity" element={<DataIntegrity />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/unsubscribe" element={<Unsubscribe />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
