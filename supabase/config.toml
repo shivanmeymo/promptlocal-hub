@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.verify-captcha]
 verify_jwt = false
+
+[functions.unsubscribe]
+verify_jwt = false
