@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, User, Calendar, LogOut, Shield } from 'lucide-react';
+import { Menu, X, User, Calendar, LogOut, Shield, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -143,6 +143,12 @@ export const Navbar: React.FC = () => {
                 <DropdownMenuItem asChild>
                   <Link to="/profile" className="cursor-pointer">
                     {t('nav.myAccount')}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings" className="cursor-pointer">
+                    <Settings className="w-4 h-4 mr-2" />
+                    {language === 'sv' ? 'Inställningar' : 'Settings'}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
