@@ -334,6 +334,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_ai_usage: {
+        Args: { p_date: string; p_max_limit?: number; p_user_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

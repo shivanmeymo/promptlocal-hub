@@ -140,28 +140,9 @@ const CreateEvent: React.FC = () => {
       return;
     }
 
-    // Check AI usage limit
-    const today = new Date().toISOString().split('T')[0];
-    const { data: usageData } = await supabase
-      .from('ai_usage')
-      .select('usage_count')
-      .eq('user_id', user?.id)
-      .eq('usage_date', today)
-      .single();
-
-    if (usageData && usageData.usage_count >= 4) {
-      toast({
-        title: language === 'sv' ? 'AI-gräns nådd' : 'AI Limit Reached',
-        description: language === 'sv' 
-          ? 'Du har nått gränsen på 4 AI-genereringar för idag. Försök igen imorgon.'
-          : 'You have reached the limit of 4 AI generations for today. Try again tomorrow.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setAiLoading(true);
     try {
+      // Server handles authentication and atomic rate limiting
       const { data, error } = await supabase.functions.invoke('generate-event-description', {
         body: {
           title: formData.title,
@@ -172,31 +153,51 @@ const CreateEvent: React.FC = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Handle rate limit error specifically
+        if (error.message?.includes('429') || data?.error?.includes('limit')) {
+          toast({
+            title: language === 'sv' ? 'AI-gräns nådd' : 'AI Limit Reached',
+            description: language === 'sv' 
+              ? 'Du har nått gränsen på 4 AI-genereringar för idag. Försök igen imorgon.'
+              : 'You have reached the limit of 4 AI generations for today. Try again tomorrow.',
+            variant: 'destructive',
+          });
+          setAiLoading(false);
+          return;
+        }
+        throw error;
+      }
       
       if (data?.description) {
         setFormData({ ...formData, description: data.description });
         
-        // Update AI usage count
-        if (usageData) {
-          await supabase.from('ai_usage').update({ usage_count: usageData.usage_count + 1 })
-            .eq('user_id', user?.id).eq('usage_date', today);
-        } else {
-          await supabase.from('ai_usage').insert({ user_id: user?.id, usage_date: today, usage_count: 1 });
-        }
-        
+        const remaining = data.remaining ?? 3;
         toast({
           title: language === 'sv' ? 'Beskrivning genererad!' : 'Description generated!',
           description: language === 'sv' 
-            ? `${4 - ((usageData?.usage_count || 0) + 1)} AI-genereringar kvar idag`
-            : `${4 - ((usageData?.usage_count || 0) + 1)} AI generations left today`,
+            ? `${remaining} AI-genereringar kvar idag`
+            : `${remaining} AI generations left today`,
         });
+      } else if (data?.error) {
+        // Handle server-side error messages
+        if (data.error.includes('limit') || data.remaining === 0) {
+          toast({
+            title: language === 'sv' ? 'AI-gräns nådd' : 'AI Limit Reached',
+            description: language === 'sv' 
+              ? 'Du har nått gränsen på 4 AI-genereringar för idag. Försök igen imorgon.'
+              : 'You have reached the limit of 4 AI generations for today. Try again tomorrow.',
+            variant: 'destructive',
+          });
+        } else {
+          throw new Error(data.error);
+        }
       }
     } catch (error: any) {
       console.error('AI generation error:', error);
       toast({
         title: t('common.error'),
-        description: error.message || (language === 'sv' ? 'Kunde inte generera beskrivning' : 'Could not generate description'),
+        description: language === 'sv' ? 'Kunde inte generera beskrivning' : 'Could not generate description',
         variant: 'destructive',
       });
     }
