@@ -24,27 +24,68 @@ const ResetPassword: React.FC = () => {
   const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
-    // Check if user has a valid session from the reset link
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setHasSession(!!session);
+    let cancelled = false;
+
+    const finalize = (sessionExists: boolean) => {
+      if (cancelled) return;
+      setHasSession(sessionExists);
       setCheckingSession(false);
     };
 
-    // Listen for auth state changes (handles the token exchange from URL)
+    const bootstrapFromUrl = async () => {
+      try {
+        // 1) PKCE flow: .../reset-password?code=...
+        if (window.location.search.includes('code=')) {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(window.location.search);
+          if (error) {
+            finalize(false);
+            return;
+          }
+          // Remove sensitive params from URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+          finalize(!!data.session);
+          return;
+        }
+
+        // 2) Implicit flow: .../reset-password#access_token=...&refresh_token=...
+        if (window.location.hash.includes('access_token=')) {
+          const hash = new URLSearchParams(window.location.hash.replace('#', ''));
+          const access_token = hash.get('access_token');
+          const refresh_token = hash.get('refresh_token');
+
+          if (access_token && refresh_token) {
+            const { data, error } = await supabase.auth.setSession({ access_token, refresh_token });
+            if (error) {
+              finalize(false);
+              return;
+            }
+            window.history.replaceState({}, document.title, window.location.pathname);
+            finalize(!!data.session);
+            return;
+          }
+        }
+
+        // 3) Fallback: already has a session
+        const { data: { session } } = await supabase.auth.getSession();
+        finalize(!!session);
+      } catch {
+        finalize(false);
+      }
+    };
+
+    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setHasSession(true);
-        setCheckingSession(false);
-      } else if (session) {
-        setHasSession(true);
-        setCheckingSession(false);
+      if (event === 'PASSWORD_RECOVERY' || !!session) {
+        finalize(true);
       }
     });
 
-    checkSession();
+    bootstrapFromUrl();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleResetPassword = async (e: React.FormEvent) => {
