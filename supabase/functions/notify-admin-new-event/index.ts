@@ -10,6 +10,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// HTML escaping to prevent XSS in email templates
+function escapeHtml(unsafe: string): string {
+  if (!unsafe) return '';
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 interface NewEventRequest {
   event_id: string;
 }
@@ -97,11 +108,11 @@ const handler = async (req: Request): Promise<Response> => {
     const approveUrl = `${functionUrl}?token=${newToken}&action=approve`;
     const rejectUrl = `${functionUrl}?token=${newToken}&action=reject`;
 
-    // Send notification to admin with approve/reject buttons
+    // Send notification to admin with approve/reject buttons (with HTML escaping)
     const adminEmailResponse = await resend.emails.send({
       from: "NowInTown <onboarding@resend.dev>",
       to: [ADMIN_EMAIL],
-      subject: `New Event Pending Review: ${event.title}`,
+      subject: `New Event Pending Review: ${escapeHtml(event.title)}`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #1f2937;">New Event Submitted for Review</h1>
@@ -111,37 +122,37 @@ const handler = async (req: Request): Promise<Response> => {
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
                 <td style="padding: 8px 0; color: #6b7280; width: 120px;"><strong>Title:</strong></td>
-                <td style="padding: 8px 0;">${event.title}</td>
+                <td style="padding: 8px 0;">${escapeHtml(event.title)}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0; color: #6b7280;"><strong>Organizer:</strong></td>
-                <td style="padding: 8px 0;">${event.organizer_name}</td>
+                <td style="padding: 8px 0;">${escapeHtml(event.organizer_name)}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0; color: #6b7280;"><strong>Date:</strong></td>
-                <td style="padding: 8px 0;">${event.start_date} at ${event.start_time}</td>
+                <td style="padding: 8px 0;">${escapeHtml(event.start_date)} at ${escapeHtml(event.start_time)}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0; color: #6b7280;"><strong>Location:</strong></td>
-                <td style="padding: 8px 0;">${event.location}</td>
+                <td style="padding: 8px 0;">${escapeHtml(event.location)}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0; color: #6b7280;"><strong>Category:</strong></td>
-                <td style="padding: 8px 0;">${event.category}</td>
+                <td style="padding: 8px 0;">${escapeHtml(event.category)}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0; color: #6b7280;"><strong>Price:</strong></td>
-                <td style="padding: 8px 0;">${event.is_free ? 'Free' : `${event.price} SEK`}</td>
+                <td style="padding: 8px 0;">${event.is_free ? 'Free' : `${escapeHtml(String(event.price))} SEK`}</td>
               </tr>
             </table>
           </div>
 
           <h2 style="color: #374151; font-size: 16px;">Event Description:</h2>
-          <p style="color: #4b5563; background: #f3f4f6; padding: 15px; border-radius: 8px;">${event.description}</p>
+          <p style="color: #4b5563; background: #f3f4f6; padding: 15px; border-radius: 8px;">${escapeHtml(event.description)}</p>
           
           ${event.organizer_description ? `
             <h2 style="color: #374151; font-size: 16px;">About the Organizer:</h2>
-            <p style="color: #4b5563;">${event.organizer_description}</p>
+            <p style="color: #4b5563;">${escapeHtml(event.organizer_description)}</p>
           ` : ''}
 
           <div style="margin-top: 30px; text-align: center;">
