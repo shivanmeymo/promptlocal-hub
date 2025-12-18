@@ -24,7 +24,7 @@ const Unsubscribe: React.FC = () => {
   }, [emailParam]);
 
   const handleUnsubscribe = async () => {
-    if (!subscriptionId) {
+    if (!subscriptionId || !email) {
       setStatus('error');
       return;
     }
@@ -33,7 +33,7 @@ const Unsubscribe: React.FC = () => {
 
     try {
       const { error } = await supabase.functions.invoke('unsubscribe', {
-        body: { subscription_id: subscriptionId },
+        body: { subscription_id: subscriptionId, email: email },
       });
 
       if (error) throw error;

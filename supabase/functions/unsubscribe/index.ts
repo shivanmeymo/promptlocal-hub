@@ -8,6 +8,7 @@ const corsHeaders = {
 
 interface UnsubscribeRequest {
   subscription_id: string;
+  email: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -22,17 +23,41 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { subscription_id }: UnsubscribeRequest = await req.json();
+    const { subscription_id, email }: UnsubscribeRequest = await req.json();
     console.log("Unsubscribing subscription:", subscription_id);
 
-    if (!subscription_id) {
+    if (!subscription_id || !email) {
       return new Response(
-        JSON.stringify({ error: "Subscription ID is required" }),
+        JSON.stringify({ error: "Invalid request" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // Update the subscription to inactive
+    // Fetch subscription and verify email matches
+    const { data: subscription, error: fetchError } = await supabase
+      .from("event_notifications")
+      .select("email, id")
+      .eq("id", subscription_id)
+      .single();
+
+    if (fetchError || !subscription) {
+      console.error("Subscription not found:", fetchError);
+      return new Response(
+        JSON.stringify({ error: "Invalid request" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Verify email ownership
+    if (subscription.email.toLowerCase() !== email.toLowerCase()) {
+      console.error("Email mismatch for subscription");
+      return new Response(
+        JSON.stringify({ error: "Invalid request" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Now safe to unsubscribe
     const { error } = await supabase
       .from("event_notifications")
       .update({ is_active: false })
@@ -52,7 +77,7 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error in unsubscribe:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "An error occurred" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
