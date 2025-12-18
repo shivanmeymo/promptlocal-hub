@@ -286,27 +286,6 @@ const CityEvents: React.FC = () => {
           </p>
         </header>
 
-        {/* City Navigation */}
-        <nav aria-label={language === 'sv' ? 'Andra städer' : 'Other cities'} className="mb-8">
-          <h2 className="sr-only">{language === 'sv' ? 'Utforska andra städer' : 'Explore other cities'}</h2>
-          <div className="flex flex-wrap gap-2">
-            {cities.map((c) => (
-              <Link
-                key={c.slug}
-                to={`/events/${c.slug}`}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  c.slug === cityConfig.slug
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                }`}
-                aria-current={c.slug === cityConfig.slug ? 'page' : undefined}
-              >
-                {language === 'sv' ? c.nameSv : c.name}
-              </Link>
-            ))}
-          </div>
-        </nav>
-
         <section aria-label={language === 'sv' ? 'Filter' : 'Filters'} className="mb-8">
           <EventFilters
             onSearchChange={setSearchTerm}
@@ -314,7 +293,7 @@ const CityEvents: React.FC = () => {
             onLocationChange={() => {}}
             onCategoryChange={setCategoryFilter}
             onFreeOnlyChange={setFreeOnly}
-            hideLocation={true}
+            initialLocation={cityConfig.nameSv.toLowerCase()}
           />
         </section>
 
