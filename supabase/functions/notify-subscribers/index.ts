@@ -9,6 +9,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// HTML escaping to prevent XSS in email templates
+function escapeHtml(unsafe: string): string {
+  if (!unsafe) return '';
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 interface NotifyRequest {
   event_id: string;
 }
@@ -110,34 +121,38 @@ const handler = async (req: Request): Promise<Response> => {
       const unsubscribeUrl = `${siteUrl}/unsubscribe?id=${sub.id}&email=${encodeURIComponent(sub.email)}`;
       
       try {
+        // Escape user-controlled content for HTML safety
+        const escapedDescription = escapeHtml(event.description?.substring(0, 200) || '');
+        const descriptionSuffix = (event.description?.length || 0) > 200 ? '...' : '';
+        
         await resend.emails.send({
           from: "NowInTown <onboarding@resend.dev>",
           to: [sub.email],
-          subject: `New Event: ${event.title}`,
+          subject: `New Event: ${escapeHtml(event.title)}`,
           html: `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
               <h1 style="color: #4F46E5;">🎉 New Event Matching Your Preferences!</h1>
               
               <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0;">
-                <h2 style="margin-top: 0; color: #1f2937;">${event.title}</h2>
-                <p style="color: #4b5563;">${event.description?.substring(0, 200)}${event.description?.length > 200 ? '...' : ''}</p>
+                <h2 style="margin-top: 0; color: #1f2937;">${escapeHtml(event.title)}</h2>
+                <p style="color: #4b5563;">${escapedDescription}${descriptionSuffix}</p>
                 
                 <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
                   <tr>
                     <td style="padding: 8px 0; color: #6b7280;"><strong>📅 Date:</strong></td>
-                    <td style="padding: 8px 0;">${event.start_date} at ${event.start_time}</td>
+                    <td style="padding: 8px 0;">${escapeHtml(event.start_date)} at ${escapeHtml(event.start_time)}</td>
                   </tr>
                   <tr>
                     <td style="padding: 8px 0; color: #6b7280;"><strong>📍 Location:</strong></td>
-                    <td style="padding: 8px 0;">${event.location}</td>
+                    <td style="padding: 8px 0;">${escapeHtml(event.location)}</td>
                   </tr>
                   <tr>
                     <td style="padding: 8px 0; color: #6b7280;"><strong>🎭 Category:</strong></td>
-                    <td style="padding: 8px 0;">${event.category}</td>
+                    <td style="padding: 8px 0;">${escapeHtml(event.category)}</td>
                   </tr>
                   <tr>
                     <td style="padding: 8px 0; color: #6b7280;"><strong>💰 Price:</strong></td>
-                    <td style="padding: 8px 0;">${event.is_free ? 'Free!' : `${event.price} SEK`}</td>
+                    <td style="padding: 8px 0;">${event.is_free ? 'Free!' : `${escapeHtml(String(event.price))} SEK`}</td>
                   </tr>
                 </table>
               </div>

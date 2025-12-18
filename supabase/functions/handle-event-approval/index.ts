@@ -9,6 +9,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// HTML escaping to prevent XSS in email templates
+function escapeHtml(unsafe: string): string {
+  if (!unsafe) return '';
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 const handler = async (req: Request): Promise<Response> => {
   console.log("handle-event-approval function called");
 
@@ -145,15 +156,15 @@ const handler = async (req: Request): Promise<Response> => {
         from: "NowInTown <onboarding@resend.dev>",
         to: [event.organizer_email],
         subject: action === "approve"
-          ? `Your event "${event.title}" has been approved!`
-          : `Update on your event "${event.title}"`,
+          ? `Your event "${escapeHtml(event.title)}" has been approved!`
+          : `Update on your event "${escapeHtml(event.title)}"`,
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h1 style="color: ${action === "approve" ? "#22c55e" : "#ef4444"};">
               ${action === "approve" ? "🎉 Event Approved!" : "Event Update"}
             </h1>
-            <p>Dear ${event.organizer_name},</p>
-            <p>Your event "<strong>${event.title}</strong>" has been <strong>${statusText}</strong>.</p>
+            <p>Dear ${escapeHtml(event.organizer_name)},</p>
+            <p>Your event "<strong>${escapeHtml(event.title)}</strong>" has been <strong>${statusText}</strong>.</p>
             ${action === "approve"
               ? `<p>Your event is now live and visible to everyone on NowInTown!</p>
                  <p><a href="${Deno.env.get("SITE_URL") || "https://your-site.lovable.app"}/events/${event.id}" 
@@ -169,7 +180,7 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Failed to send organizer email:", emailError);
     }
 
-    // Return success page
+    // Return success page (with HTML escaping)
     return new Response(
       `<!DOCTYPE html>
       <html>
@@ -189,8 +200,8 @@ const handler = async (req: Request): Promise<Response> => {
           <h1 class="${action === "approve" ? "success" : "reject"}">
             ${action === "approve" ? "✅ Event Approved!" : "❌ Event Rejected"}
           </h1>
-          <p><strong>"${event.title}"</strong> has been ${statusText}.</p>
-          <p>The event organizer (${event.organizer_email}) has been notified.</p>
+          <p><strong>"${escapeHtml(event.title)}"</strong> has been ${statusText}.</p>
+          <p>The event organizer (${escapeHtml(event.organizer_email)}) has been notified.</p>
         </div>
       </body>
       </html>`,

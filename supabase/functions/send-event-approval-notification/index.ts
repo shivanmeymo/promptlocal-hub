@@ -10,6 +10,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// HTML escaping to prevent XSS in email templates
+function escapeHtml(unsafe: string): string {
+  if (!unsafe) return '';
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 interface EventApprovalRequest {
   event_id: string;
   status: "approved" | "rejected";
@@ -89,26 +100,26 @@ const handler = async (req: Request): Promise<Response> => {
     const statusText = status === "approved" ? "Approved" : "Rejected";
     const statusColor = status === "approved" ? "#22c55e" : "#ef4444";
 
-    // Send notification to event organizer
+    // Send notification to event organizer (with HTML escaping)
     const organizerEmailResponse = await resend.emails.send({
       from: "NowInTown <onboarding@resend.dev>",
       to: [event.organizer_email],
-      subject: `Your Event "${event.title}" has been ${statusText}`,
+      subject: `Your Event "${escapeHtml(event.title)}" has been ${statusText}`,
       html: `
         <h1>Event ${statusText}</h1>
-        <p>Dear ${event.organizer_name},</p>
-        <p>Your event "<strong>${event.title}</strong>" has been <span style="color: ${statusColor}; font-weight: bold;">${statusText.toLowerCase()}</span>.</p>
+        <p>Dear ${escapeHtml(event.organizer_name)},</p>
+        <p>Your event "<strong>${escapeHtml(event.title)}</strong>" has been <span style="color: ${statusColor}; font-weight: bold;">${statusText.toLowerCase()}</span>.</p>
         ${status === "approved" ? `
           <p>Your event is now live and visible to the public!</p>
           <h2>Event Details:</h2>
           <ul>
-            <li><strong>Date:</strong> ${event.start_date}</li>
-            <li><strong>Time:</strong> ${event.start_time}</li>
-            <li><strong>Location:</strong> ${event.location}</li>
+            <li><strong>Date:</strong> ${escapeHtml(event.start_date)}</li>
+            <li><strong>Time:</strong> ${escapeHtml(event.start_time)}</li>
+            <li><strong>Location:</strong> ${escapeHtml(event.location)}</li>
           </ul>
         ` : `
           <p>Unfortunately, your event did not meet our guidelines.</p>
-          ${admin_notes ? `<p><strong>Reason:</strong> ${admin_notes}</p>` : ""}
+          ${admin_notes ? `<p><strong>Reason:</strong> ${escapeHtml(admin_notes)}</p>` : ""}
           <p>Feel free to update your event and resubmit it for review.</p>
         `}
         <p>Best regards,<br>The NowInTown Team</p>
@@ -117,21 +128,21 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Organizer notification sent:", organizerEmailResponse);
 
-    // Send notification to admin
+    // Send notification to admin (with HTML escaping)
     const adminEmailResponse = await resend.emails.send({
       from: "NowInTown <onboarding@resend.dev>",
       to: [ADMIN_EMAIL],
-      subject: `Event ${statusText}: ${event.title}`,
+      subject: `Event ${statusText}: ${escapeHtml(event.title)}`,
       html: `
         <h1>Event ${statusText}</h1>
         <p>The following event has been ${statusText.toLowerCase()}:</p>
         <ul>
-          <li><strong>Title:</strong> ${event.title}</li>
-          <li><strong>Organizer:</strong> ${event.organizer_name} (${event.organizer_email})</li>
-          <li><strong>Date:</strong> ${event.start_date}</li>
-          <li><strong>Location:</strong> ${event.location}</li>
+          <li><strong>Title:</strong> ${escapeHtml(event.title)}</li>
+          <li><strong>Organizer:</strong> ${escapeHtml(event.organizer_name)} (${escapeHtml(event.organizer_email)})</li>
+          <li><strong>Date:</strong> ${escapeHtml(event.start_date)}</li>
+          <li><strong>Location:</strong> ${escapeHtml(event.location)}</li>
         </ul>
-        ${admin_notes ? `<p><strong>Admin Notes:</strong> ${admin_notes}</p>` : ""}
+        ${admin_notes ? `<p><strong>Admin Notes:</strong> ${escapeHtml(admin_notes)}</p>` : ""}
       `,
     });
 

@@ -17,13 +17,21 @@ interface ContactNotificationRequest {
   message: string;
 }
 
+// HTML escaping to prevent XSS in email templates
+function escapeHtml(unsafe: string): string {
+  if (!unsafe) return '';
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // Input sanitization helper
 function sanitizeInput(input: string, maxLength: number = 1000): string {
   if (!input || typeof input !== 'string') return '';
-  return input
-    .slice(0, maxLength)
-    .replace(/[<>]/g, '') // Remove potential HTML tags
-    .trim();
+  return input.slice(0, maxLength).trim();
 }
 
 function isValidEmail(email: string): boolean {
@@ -64,32 +72,32 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Received contact form submission from:", name, email);
 
-    // Send notification to admin
+    // Send notification to admin (with HTML escaping)
     const adminEmailResponse = await resend.emails.send({
       from: "NowInTown <onboarding@resend.dev>",
       to: [ADMIN_EMAIL],
-      subject: `New Contact Form Submission: ${category || "General"}`,
+      subject: `New Contact Form Submission: ${escapeHtml(category || "General")}`,
       html: `
         <h1>New Contact Form Submission</h1>
-        <p><strong>From:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        ${phone ? `<p><strong>Phone:</strong> ${phone}</p>` : ""}
-        ${category ? `<p><strong>Category:</strong> ${category}</p>` : ""}
+        <p><strong>From:</strong> ${escapeHtml(name)}</p>
+        <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+        ${phone ? `<p><strong>Phone:</strong> ${escapeHtml(phone)}</p>` : ""}
+        ${category ? `<p><strong>Category:</strong> ${escapeHtml(category)}</p>` : ""}
         <hr>
         <h2>Message:</h2>
-        <p>${message}</p>
+        <p>${escapeHtml(message)}</p>
       `,
     });
 
     console.log("Admin notification sent:", adminEmailResponse);
 
-    // Send confirmation to user
+    // Send confirmation to user (with HTML escaping)
     const userEmailResponse = await resend.emails.send({
       from: "NowInTown <onboarding@resend.dev>",
       to: [email],
       subject: "We received your message!",
       html: `
-        <h1>Thank you for contacting us, ${name}!</h1>
+        <h1>Thank you for contacting us, ${escapeHtml(name)}!</h1>
         <p>We have received your message and will get back to you as soon as possible.</p>
         <p>Best regards,<br>The NowInTown Team</p>
       `,

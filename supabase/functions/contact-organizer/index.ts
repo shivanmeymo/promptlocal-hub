@@ -9,12 +9,20 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// HTML escaping to prevent XSS in email templates
+function escapeHtml(unsafe: string): string {
+  if (!unsafe) return '';
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // Input sanitization
 function sanitizeInput(input: string, maxLength: number = 1000): string {
-  return input
-    .trim()
-    .slice(0, maxLength)
-    .replace(/[<>]/g, ''); // Basic XSS prevention
+  return input.trim().slice(0, maxLength);
 }
 
 // Email validation
@@ -85,26 +93,26 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Sending contact message for event ${eventId} to ${event.organizer_email}`);
 
-    // Send email to organizer
+    // Send email to organizer (with HTML escaping for all user data)
     const { error: emailError } = await resend.emails.send({
       from: "NowInTown <noreply@resend.dev>",
       to: [event.organizer_email],
       reply_to: senderEmail,
-      subject: `New inquiry about your event: ${eventTitle}`,
+      subject: `New inquiry about your event: ${escapeHtml(eventTitle)}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">New message about your event</h2>
-          <p>Hi ${event.organizer_name},</p>
-          <p>You have received a new inquiry about your event <strong>"${eventTitle}"</strong> on NowInTown.</p>
+          <p>Hi ${escapeHtml(event.organizer_name)},</p>
+          <p>You have received a new inquiry about your event <strong>"${escapeHtml(eventTitle)}"</strong> on NowInTown.</p>
           
           <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p><strong>From:</strong> ${senderName}</p>
-            <p><strong>Email:</strong> ${senderEmail}</p>
+            <p><strong>From:</strong> ${escapeHtml(senderName)}</p>
+            <p><strong>Email:</strong> ${escapeHtml(senderEmail)}</p>
             <p><strong>Message:</strong></p>
-            <p style="white-space: pre-line;">${message}</p>
+            <p style="white-space: pre-line;">${escapeHtml(message)}</p>
           </div>
           
-          <p>You can reply directly to this email to respond to ${senderName}.</p>
+          <p>You can reply directly to this email to respond to ${escapeHtml(senderName)}.</p>
           
           <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
           <p style="color: #666; font-size: 12px;">This message was sent via NowInTown contact form. Do not share your personal information with unknown contacts.</p>
@@ -120,21 +128,21 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Send confirmation to sender
+    // Send confirmation to sender (with HTML escaping)
     await resend.emails.send({
       from: "NowInTown <noreply@resend.dev>",
       to: [senderEmail],
-      subject: `Your message to ${event.organizer_name} has been sent`,
+      subject: `Your message to ${escapeHtml(event.organizer_name)} has been sent`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Message sent successfully!</h2>
-          <p>Hi ${senderName},</p>
-          <p>Your message regarding <strong>"${eventTitle}"</strong> has been sent to the organizer.</p>
+          <p>Hi ${escapeHtml(senderName)},</p>
+          <p>Your message regarding <strong>"${escapeHtml(eventTitle)}"</strong> has been sent to the organizer.</p>
           <p>They will respond to you at this email address if they wish to get in touch.</p>
           
           <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <p><strong>Your message:</strong></p>
-            <p style="white-space: pre-line;">${message}</p>
+            <p style="white-space: pre-line;">${escapeHtml(message)}</p>
           </div>
           
           <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
