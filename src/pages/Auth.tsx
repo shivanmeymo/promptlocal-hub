@@ -438,15 +438,21 @@ const Auth: React.FC = () => {
                   {/* Captcha Widget */}
                   <div className="flex flex-col items-center gap-2">
                     <div id="turnstile-container" className="min-h-[65px]" />
-                    {captchaToken && (
+                    {captchaToken ? (
                       <div className="flex items-center gap-1 text-sm text-green-600">
                         <Shield className="w-4 h-4" />
                         {language === 'sv' ? 'Verifierad' : 'Verified'}
                       </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        {language === 'sv'
+                          ? 'Slutför captcha för att skapa konto.'
+                          : 'Complete the captcha to create an account.'}
+                      </p>
                     )}
                   </div>
-                  
-                  <Button type="submit" className="w-full" disabled={loading || !captchaToken}>
+
+                  <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? t('common.loading') : t('auth.signUp')}
                   </Button>
                 </form>
