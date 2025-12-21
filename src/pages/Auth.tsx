@@ -13,8 +13,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
-// Cloudflare Turnstile site key - uses environment variable for production
-const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || "1x00000000000000000000AA";
+// Cloudflare Turnstile site key (public)
+// Note: this is safe to ship in frontend. Domain restrictions are enforced in Turnstile settings.
+const TURNSTILE_SITE_KEY = "0x4AAAAAACH5AgxC_kb_RAge";
 
 declare global {
   interface Window {
