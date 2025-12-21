@@ -113,11 +113,12 @@ const Auth: React.FC = () => {
       },
       'error-callback': () => {
         // Common cause: site key not allowed for current domain (Turnstile error 400020)
+        const host = window.location.hostname;
         setCaptchaToken(null);
         setCaptchaError(
           language === 'sv'
-            ? 'Captcha fungerar inte på denna domän. Kontrollera att din Turnstile-sitekey tillåter denna URL (fel 400020).'
-            : 'Captcha is not working on this domain. Ensure your Turnstile site key allows this URL (error 400020).'
+            ? `Captcha fungerar inte på denna domän (${host}). Lägg till domänen i Turnstile-inställningarna för din sitekey (fel 400020).`
+            : `Captcha is not working on this domain (${host}). Add it to the allowed domains for your Turnstile site key (error 400020).`
         );
       },
       'expired-callback': () => {
