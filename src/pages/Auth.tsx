@@ -49,16 +49,22 @@ const Auth: React.FC = () => {
   const [resetEmail, setResetEmail] = useState('');
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaWidgetId, setCaptchaWidgetId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('signin');
+  const [scriptLoaded, setScriptLoaded] = useState(false);
 
   // Load Turnstile script
   useEffect(() => {
-    if (document.getElementById('turnstile-script')) return;
+    if (document.getElementById('turnstile-script')) {
+      setScriptLoaded(true);
+      return;
+    }
     
     const script = document.createElement('script');
     script.id = 'turnstile-script';
     script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
     script.async = true;
     script.defer = true;
+    script.onload = () => setScriptLoaded(true);
     document.head.appendChild(script);
 
     return () => {
@@ -98,16 +104,16 @@ const Auth: React.FC = () => {
     setCaptchaWidgetId(widgetId);
   }, []);
 
-  // Re-render captcha when switching to signup tab
+  // Render captcha when switching to signup tab and script is loaded
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (window.turnstile) {
+    if (activeTab === 'signup' && scriptLoaded) {
+      // Small delay to ensure container is in DOM
+      const timer = setTimeout(() => {
         renderCaptcha();
-      }
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, [renderCaptcha]);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab, scriptLoaded, renderCaptcha]);
 
   // Redirect if already logged in
   React.useEffect(() => {
@@ -328,7 +334,7 @@ const Auth: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="signin">{t('auth.signIn')}</TabsTrigger>
                 <TabsTrigger value="signup">{t('auth.signUp')}</TabsTrigger>
