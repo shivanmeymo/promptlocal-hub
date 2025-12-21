@@ -54,11 +54,20 @@ const Auth: React.FC = () => {
 
   // Load Turnstile script
   useEffect(() => {
-    if (document.getElementById('turnstile-script')) {
-      setScriptLoaded(true);
-      return;
+    const existing = document.getElementById('turnstile-script') as HTMLScriptElement | null;
+
+    // If the script already exists, only mark it as loaded when the Turnstile API is actually available
+    if (existing) {
+      if (window.turnstile) {
+        setScriptLoaded(true);
+        return;
+      }
+
+      const onLoad = () => setScriptLoaded(true);
+      existing.addEventListener('load', onLoad);
+      return () => existing.removeEventListener('load', onLoad);
     }
-    
+
     const script = document.createElement('script');
     script.id = 'turnstile-script';
     script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
@@ -66,14 +75,16 @@ const Auth: React.FC = () => {
     script.defer = true;
     script.onload = () => setScriptLoaded(true);
     document.head.appendChild(script);
+  }, []);
 
+  // Cleanup widget on unmount / when widget changes
+  useEffect(() => {
     return () => {
-      // Cleanup widget on unmount
       if (captchaWidgetId && window.turnstile) {
         window.turnstile.remove(captchaWidgetId);
       }
     };
-  }, []);
+  }, [captchaWidgetId]);
 
   // Render Turnstile widget for signup
   const renderCaptcha = useCallback(() => {
@@ -106,13 +117,23 @@ const Auth: React.FC = () => {
 
   // Render captcha when switching to signup tab and script is loaded
   useEffect(() => {
-    if (activeTab === 'signup' && scriptLoaded) {
-      // Small delay to ensure container is in DOM
-      const timer = setTimeout(() => {
+    if (activeTab !== 'signup' || !scriptLoaded) return;
+
+    let tries = 0;
+    const maxTries = 40; // ~4s
+
+    const tick = () => {
+      // Wait until the API is truly available (some browsers fire load before window.turnstile is ready)
+      if (window.turnstile) {
         renderCaptcha();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
+        return;
+      }
+      tries += 1;
+      if (tries >= maxTries) return;
+      window.setTimeout(tick, 100);
+    };
+
+    tick();
   }, [activeTab, scriptLoaded, renderCaptcha]);
 
   // Redirect if already logged in
