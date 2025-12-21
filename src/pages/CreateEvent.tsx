@@ -77,9 +77,8 @@ const CreateEvent: React.FC = () => {
   useEffect(() => {
     if (!user) {
       toast({
-        title: language === 'sv' ? 'Logga in krävs' : 'Login required',
-        description: language === 'sv' ? 'Du måste logga in för att skapa event.' : 'You must log in to create events.',
-        variant: 'destructive',
+        title: language === 'sv' ? '🔐 Logga in krävs' : '🔐 Login required',
+        description: language === 'sv' ? 'Vänligen logga in för att skapa event.' : 'Please log in to create events.',
       });
       navigate('/auth');
     }

@@ -33,7 +33,7 @@ interface Event {
   organizer_description: string | null;
   organizer_website?: string | null;
   is_online?: boolean;
-  user_id: string;
+  user_id?: string;
 }
 
 const EventDetails: React.FC = () => {
