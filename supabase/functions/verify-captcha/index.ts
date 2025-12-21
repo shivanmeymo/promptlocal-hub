@@ -19,7 +19,7 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const TURNSTILE_SECRET_KEY = Deno.env.get("TURNSTILE_SECRET_KEY");
     
-    // Warn if using test key in production
+    // Check if secret key is configured
     if (!TURNSTILE_SECRET_KEY) {
       console.error("TURNSTILE_SECRET_KEY not configured - CAPTCHA verification disabled");
       return new Response(
@@ -28,8 +28,9 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
     
-    // Detect test keys and log warning
-    if (TURNSTILE_SECRET_KEY.startsWith("1x0")) {
+    // Detect test keys and handle accordingly
+    const isTestSecretKey = TURNSTILE_SECRET_KEY.startsWith("1x0");
+    if (isTestSecretKey) {
       console.warn("WARNING: Using Cloudflare Turnstile test key - replace before production!");
     }
 
