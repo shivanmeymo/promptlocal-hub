@@ -49,6 +49,7 @@ const Auth: React.FC = () => {
   const [resetEmail, setResetEmail] = useState('');
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaWidgetId, setCaptchaWidgetId] = useState<string | null>(null);
+  const [captchaError, setCaptchaError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('signin');
   const [scriptLoaded, setScriptLoaded] = useState(false);
 
@@ -70,10 +71,18 @@ const Auth: React.FC = () => {
 
     const script = document.createElement('script');
     script.id = 'turnstile-script';
-    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+    // Explicit mode because we render manually via window.turnstile.render
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
     script.async = true;
     script.defer = true;
     script.onload = () => setScriptLoaded(true);
+    script.onerror = () => {
+      setCaptchaError(
+        language === 'sv'
+          ? 'Captcha kunde inte laddas (blockerad eller felaktig nyckel).'
+          : 'Captcha failed to load (blocked or invalid key).'
+      );
+    };
     document.head.appendChild(script);
   }, []);
 
@@ -94,14 +103,22 @@ const Auth: React.FC = () => {
     // Clear existing widget + reset token
     container.innerHTML = '';
     setCaptchaToken(null);
+    setCaptchaError(null);
 
     const widgetId = window.turnstile.render(container, {
       sitekey: TURNSTILE_SITE_KEY,
       callback: (token: string) => {
         setCaptchaToken(token);
+        setCaptchaError(null);
       },
       'error-callback': () => {
+        // Common cause: site key not allowed for current domain (Turnstile error 400020)
         setCaptchaToken(null);
+        setCaptchaError(
+          language === 'sv'
+            ? 'Captcha fungerar inte på denna domän. Kontrollera att din Turnstile-sitekey tillåter denna URL (fel 400020).'
+            : 'Captcha is not working on this domain. Ensure your Turnstile site key allows this URL (error 400020).'
+        );
       },
       'expired-callback': () => {
         setCaptchaToken(null);
@@ -111,7 +128,7 @@ const Auth: React.FC = () => {
     });
 
     setCaptchaWidgetId(widgetId);
-  }, []);
+  }, [language]);
 
   // Render captcha immediately when entering signup (no need to type in fields)
   useEffect(() => {
@@ -128,12 +145,19 @@ const Auth: React.FC = () => {
       }
 
       tries += 1;
-      if (tries >= maxTries) return;
+      if (tries >= maxTries) {
+        setCaptchaError(
+          language === 'sv'
+            ? 'Captcha kunde inte initieras. Kontrollera att Turnstile-scriptet inte blockeras.'
+            : 'Captcha could not initialize. Check if the Turnstile script is being blocked.'
+        );
+        return;
+      }
       window.setTimeout(tick, 100);
     };
 
     tick();
-  }, [activeTab, scriptLoaded, renderCaptcha]);
+  }, [activeTab, scriptLoaded, renderCaptcha, language]);
 
   // Redirect if already logged in
   React.useEffect(() => {
@@ -166,12 +190,16 @@ const Auth: React.FC = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Verify captcha
     if (!captchaToken) {
       toast({
         title: language === 'sv' ? 'Verifiering krävs' : 'Verification required',
-        description: language === 'sv' ? 'Vänligen slutför captcha-verifieringen.' : 'Please complete the captcha verification.',
+        description:
+          captchaError ||
+          (language === 'sv'
+            ? 'Vänligen slutför captcha-verifieringen.'
+            : 'Please complete the captcha verification.'),
         variant: 'destructive',
       });
       return;
@@ -181,17 +209,20 @@ const Auth: React.FC = () => {
 
     try {
       // Verify captcha token with backend
-      const { data: captchaResult, error: captchaError } = await supabase.functions.invoke('verify-captcha', {
+      const { data: captchaResult, error: captchaInvokeError } = await supabase.functions.invoke('verify-captcha', {
         body: { token: captchaToken },
       });
 
-      if (captchaError || !captchaResult?.success) {
+      if (captchaInvokeError || !captchaResult?.success) {
         toast({
           title: language === 'sv' ? 'Verifiering misslyckades' : 'Verification failed',
-          description: language === 'sv' ? 'Captcha-verifieringen misslyckades. Försök igen.' : 'Captcha verification failed. Please try again.',
+          description:
+            language === 'sv'
+              ? 'Captcha-verifieringen misslyckades. Försök igen.'
+              : 'Captcha verification failed. Please try again.',
           variant: 'destructive',
         });
-        // Reset captcha
+
         if (captchaWidgetId && window.turnstile) {
           window.turnstile.reset(captchaWidgetId);
         }
@@ -208,7 +239,7 @@ const Auth: React.FC = () => {
           description: error.message,
           variant: 'destructive',
         });
-        // Reset captcha on error
+
         if (captchaWidgetId && window.turnstile) {
           window.turnstile.reset(captchaWidgetId);
         }
@@ -463,6 +494,10 @@ const Auth: React.FC = () => {
                         <Shield className="w-4 h-4" />
                         {language === 'sv' ? 'Verifierad' : 'Verified'}
                       </div>
+                    ) : captchaError ? (
+                      <p className="text-xs text-destructive text-center">
+                        {captchaError}
+                      </p>
                     ) : (
                       <p className="text-xs text-muted-foreground">
                         {language === 'sv'
