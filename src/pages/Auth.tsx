@@ -90,44 +90,43 @@ const Auth: React.FC = () => {
   const renderCaptcha = useCallback(() => {
     const container = document.getElementById('turnstile-container');
     if (!container || !window.turnstile) return;
-    
-    // Clear existing widget
+
+    // Clear existing widget + reset token
     container.innerHTML = '';
-    
+    setCaptchaToken(null);
+
     const widgetId = window.turnstile.render(container, {
       sitekey: TURNSTILE_SITE_KEY,
       callback: (token: string) => {
-        console.log('Captcha verified');
         setCaptchaToken(token);
       },
       'error-callback': () => {
-        console.error('Captcha error');
         setCaptchaToken(null);
       },
       'expired-callback': () => {
-        console.log('Captcha expired');
         setCaptchaToken(null);
       },
       theme: 'auto',
       size: 'normal',
     });
-    
+
     setCaptchaWidgetId(widgetId);
   }, []);
 
-  // Render captcha when switching to signup tab and script is loaded
+  // Render captcha immediately when entering signup (no need to type in fields)
   useEffect(() => {
     if (activeTab !== 'signup' || !scriptLoaded) return;
 
     let tries = 0;
-    const maxTries = 40; // ~4s
+    const maxTries = 60; // ~6s
 
     const tick = () => {
-      // Wait until the API is truly available (some browsers fire load before window.turnstile is ready)
-      if (window.turnstile) {
+      const container = document.getElementById('turnstile-container');
+      if (container && window.turnstile) {
         renderCaptcha();
         return;
       }
+
       tries += 1;
       if (tries >= maxTries) return;
       window.setTimeout(tick, 100);
@@ -474,7 +473,7 @@ const Auth: React.FC = () => {
                   </div>
 
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? t('common.loading') : t('auth.signUp')}
+                    {loading ? t('common.loading') : 'Sign up'}
                   </Button>
                 </form>
               </TabsContent>
