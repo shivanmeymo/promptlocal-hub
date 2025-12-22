@@ -24,6 +24,7 @@ import Terms from "./pages/Terms";
 
 import Unsubscribe from "./pages/Unsubscribe";
 import ResetPassword from "./pages/ResetPassword";
+import ApprovalResult from "./pages/ApprovalResult";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const App = () => (
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/unsubscribe" element={<Unsubscribe />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/approval-result" element={<ApprovalResult />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
