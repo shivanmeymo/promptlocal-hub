@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Calendar, Clock, MapPin, Edit2 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +32,7 @@ interface EventCardProps {
 
 export const EventCard: React.FC<EventCardProps> = ({ event, isOwner, onEdit }) => {
   const { t, language } = useLanguage();
+  const navigate = useNavigate();
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -98,10 +99,15 @@ export const EventCard: React.FC<EventCardProps> = ({ event, isOwner, onEdit }) 
                   size="sm"
                   variant="secondary"
                   className="absolute top-3 left-3 focus:ring-2 focus:ring-offset-2"
+                  type="button"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    onEdit?.();
+                    if (onEdit) {
+                      onEdit();
+                      return;
+                    }
+                    navigate(`/edit-event/${event.id}`);
                   }}
                   aria-label={`${t('events.edit')} ${event.title}`}
                 >
