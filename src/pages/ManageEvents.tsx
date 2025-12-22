@@ -138,10 +138,10 @@ const ManageEvents: React.FC = () => {
         ) : events.length > 0 ? (
           <div className="grid gap-4">
             {events.map((event) => (
-              <Card 
+                <Card 
                 key={event.id} 
                 className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => navigate(`/events/${event.id}`)}
+                onClick={() => navigate(`/edit-event/${event.id}`)}
               >
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row justify-between gap-4">
