@@ -150,11 +150,6 @@ export const Navbar: React.FC = () => {
                     {language === 'sv' ? 'Inställningar' : 'Settings'}
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/manage-events" className="cursor-pointer">
-                    {t('nav.manageEvents')}
-                  </Link>
-                </DropdownMenuItem>
                 {isAdmin && (
                   <>
                     <DropdownMenuSeparator />
