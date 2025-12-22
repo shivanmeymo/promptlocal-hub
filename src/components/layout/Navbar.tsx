@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, User, Calendar, LogOut, Shield, Settings } from 'lucide-react';
-import logo from '@/assets/logo.jpg';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -104,7 +103,11 @@ export const Navbar: React.FC = () => {
       <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center" aria-label="NowInTown Home">
-          <img src={logo} alt="NowInTown" className="h-10 w-auto" />
+          <span className="font-bold text-xl tracking-tight">
+            <span style={{ color: '#1a3a5c' }}>Now</span>
+            <span style={{ color: '#f5a623' }}>In</span>
+            <span style={{ color: '#1a3a5c' }}>Town</span>
+          </span>
         </Link>
 
         {/* Desktop Navigation */}
