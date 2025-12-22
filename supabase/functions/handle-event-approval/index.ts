@@ -173,18 +173,14 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Failed to send organizer email:", emailError);
     }
 
-    // Redirect to React page with result
-    const redirectUrl = new URL(`${siteUrl}/approval-result`);
-    redirectUrl.searchParams.set("status", "success");
-    redirectUrl.searchParams.set("action", action);
-    redirectUrl.searchParams.set("title", encodeURIComponent(event.title));
-    redirectUrl.searchParams.set("email", encodeURIComponent(event.organizer_email));
+    // Redirect admin to homepage after approval/rejection
+    const normalizedSiteUrl = siteUrl.replace(/\/+$/, "");
     
     return new Response(null, {
       status: 302,
       headers: { 
         ...corsHeaders, 
-        "Location": redirectUrl.toString() 
+        "Location": normalizedSiteUrl 
       },
     });
   } catch (error: any) {

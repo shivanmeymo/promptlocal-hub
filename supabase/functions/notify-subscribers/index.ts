@@ -159,7 +159,7 @@ const handler = async (req: Request): Promise<Response> => {
               </div>
 
               <div style="text-align: center; margin-top: 30px;">
-                <a href="${siteUrl}/event/${event.id}" 
+                <a href="${siteUrl}" 
                    style="background-color: #4F46E5; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
                   View Event Details
                 </a>
