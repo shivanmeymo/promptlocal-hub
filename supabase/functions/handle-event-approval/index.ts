@@ -37,16 +37,16 @@ const handler = async (req: Request): Promise<Response> => {
     const token = url.searchParams.get("token");
     const action = url.searchParams.get("action");
 
+    const siteUrl = Deno.env.get("SITE_URL") || "https://szmnfthiblejkjfdbeba.lovableproject.com";
+
     if (!token || !action || !["approve", "reject"].includes(action)) {
-      return new Response(
-        `<!DOCTYPE html>
-        <html><head><title>Invalid Request</title></head>
-        <body style="font-family: sans-serif; text-align: center; padding: 50px;">
-          <h1>Invalid Request</h1>
-          <p>Missing or invalid parameters.</p>
-        </body></html>`,
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "text/html" } }
-      );
+      const redirectUrl = new URL(`${siteUrl}/approval-result`);
+      redirectUrl.searchParams.set("status", "invalid");
+      redirectUrl.searchParams.set("error", encodeURIComponent("Saknade eller ogiltiga parametrar"));
+      return new Response(null, {
+        status: 302,
+        headers: { ...corsHeaders, "Location": redirectUrl.toString() },
+      });
     }
 
     // Find event by approval token
@@ -58,15 +58,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (eventError || !event) {
       console.error("Event not found:", eventError);
-      return new Response(
-        `<!DOCTYPE html>
-        <html><head><title>Event Not Found</title></head>
-        <body style="font-family: sans-serif; text-align: center; padding: 50px;">
-          <h1>Event Not Found</h1>
-          <p>This link may have expired or the event no longer exists.</p>
-        </body></html>`,
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "text/html" } }
-      );
+      const redirectUrl = new URL(`${siteUrl}/approval-result`);
+      redirectUrl.searchParams.set("status", "invalid");
+      redirectUrl.searchParams.set("error", encodeURIComponent("Evenemanget kunde inte hittas"));
+      return new Response(null, {
+        status: 302,
+        headers: { ...corsHeaders, "Location": redirectUrl.toString() },
+      });
     }
 
     // Check token expiration (7 days)
@@ -76,27 +74,22 @@ const handler = async (req: Request): Promise<Response> => {
     
     if (new Date() > expiryDate) {
       console.log("Token expired for event:", event.id, "Created at:", tokenCreatedAt, "Expired at:", expiryDate);
-      return new Response(
-        `<!DOCTYPE html>
-        <html><head><title>Link Expired</title></head>
-        <body style="font-family: sans-serif; text-align: center; padding: 50px;">
-          <h1>Link Expired</h1>
-          <p>This approval link has expired. Please use the admin dashboard to approve or reject this event.</p>
-        </body></html>`,
-        { status: 410, headers: { ...corsHeaders, "Content-Type": "text/html" } }
-      );
+      const redirectUrl = new URL(`${siteUrl}/approval-result`);
+      redirectUrl.searchParams.set("status", "expired");
+      return new Response(null, {
+        status: 302,
+        headers: { ...corsHeaders, "Location": redirectUrl.toString() },
+      });
     }
 
     if (event.status !== "pending") {
-      return new Response(
-        `<!DOCTYPE html>
-        <html><head><title>Already Processed</title></head>
-        <body style="font-family: sans-serif; text-align: center; padding: 50px;">
-          <h1>Already Processed</h1>
-          <p>This event has already been ${event.status}.</p>
-        </body></html>`,
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "text/html" } }
-      );
+      const redirectUrl = new URL(`${siteUrl}/approval-result`);
+      redirectUrl.searchParams.set("status", "already_processed");
+      redirectUrl.searchParams.set("current_status", event.status);
+      return new Response(null, {
+        status: 302,
+        headers: { ...corsHeaders, "Location": redirectUrl.toString() },
+      });
     }
 
     const newStatus = action === "approve" ? "approved" : "rejected";
@@ -180,33 +173,20 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Failed to send organizer email:", emailError);
     }
 
-    // Return success page (with HTML escaping)
-    return new Response(
-      `<!DOCTYPE html>
-      <html>
-      <head>
-        <title>Event ${action === "approve" ? "Approved" : "Rejected"}</title>
-        <style>
-          body { font-family: -apple-system, sans-serif; text-align: center; padding: 50px; background: #f9fafb; }
-          .card { background: white; padding: 40px; border-radius: 16px; max-width: 500px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-          .success { color: #22c55e; }
-          .reject { color: #ef4444; }
-          h1 { margin-bottom: 20px; }
-          p { color: #6b7280; line-height: 1.6; }
-        </style>
-      </head>
-      <body>
-        <div class="card">
-          <h1 class="${action === "approve" ? "success" : "reject"}">
-            ${action === "approve" ? "✅ Event Approved!" : "❌ Event Rejected"}
-          </h1>
-          <p><strong>"${escapeHtml(event.title)}"</strong> has been ${statusText}.</p>
-          <p>The event organizer (${escapeHtml(event.organizer_email)}) has been notified.</p>
-        </div>
-      </body>
-      </html>`,
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "text/html" } }
-    );
+    // Redirect to React page with result
+    const redirectUrl = new URL(`${siteUrl}/approval-result`);
+    redirectUrl.searchParams.set("status", "success");
+    redirectUrl.searchParams.set("action", action);
+    redirectUrl.searchParams.set("title", encodeURIComponent(event.title));
+    redirectUrl.searchParams.set("email", encodeURIComponent(event.organizer_email));
+    
+    return new Response(null, {
+      status: 302,
+      headers: { 
+        ...corsHeaders, 
+        "Location": redirectUrl.toString() 
+      },
+    });
   } catch (error: any) {
     console.error("Error in handle-event-approval:", error);
     return new Response(

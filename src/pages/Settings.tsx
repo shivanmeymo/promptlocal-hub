@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
-import { Mail, Shield, Unlink, Loader2, Check, AlertCircle } from "lucide-react";
+import { Mail, Shield, Unlink, Loader2, Check, AlertCircle, Bell, BellOff, Trash2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,9 +12,34 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type AuthProvider = "email" | "google" | "unknown";
+
+interface Notification {
+  id: string;
+  email: string;
+  is_active: boolean;
+  filters: {
+    location?: string;
+    category?: string;
+    freeOnly?: boolean;
+    keywords?: string[];
+  } | null;
+  created_at: string;
+}
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
@@ -23,6 +48,12 @@ const Settings: React.FC = () => {
   const [newEmail, setNewEmail] = useState("");
   const [emailLoading, setEmailLoading] = useState(false);
   const [unlinkLoading, setUnlinkLoading] = useState(false);
+  
+  // Notification preferences
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(true);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -39,8 +70,90 @@ const Settings: React.FC = () => {
       } else if (provider === "email" || user.email) {
         setAuthProvider("email");
       }
+      
+      // Fetch user's notification subscriptions
+      fetchNotifications();
     }
   }, [user]);
+
+  const fetchNotifications = async () => {
+    if (!user) return;
+    
+    setNotificationsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("event_notifications")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      
+      setNotifications((data || []).map(n => ({
+        ...n,
+        filters: n.filters as Notification["filters"]
+      })));
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
+  const toggleNotification = async (id: string, currentActive: boolean) => {
+    setTogglingId(id);
+    try {
+      const { error } = await supabase
+        .from("event_notifications")
+        .update({ is_active: !currentActive })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setNotifications(prev => 
+        prev.map(n => n.id === id ? { ...n, is_active: !currentActive } : n)
+      );
+      
+      toast.success(currentActive ? "Notifikationer pausade" : "Notifikationer aktiverade");
+    } catch (err: any) {
+      toast.error("Kunde inte uppdatera notifikationer");
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  const deleteNotification = async (id: string) => {
+    setDeletingId(id);
+    try {
+      const { error } = await supabase
+        .from("event_notifications")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      toast.success("Prenumeration borttagen");
+    } catch (err: any) {
+      toast.error("Kunde inte ta bort prenumeration");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const getCategoryLabel = (category: string) => {
+    const labels: Record<string, string> = {
+      music: "Musik",
+      sports: "Sport",
+      art: "Konst",
+      food: "Mat & Dryck",
+      business: "Business",
+      education: "Utbildning",
+      community: "Community",
+      other: "Övrigt",
+    };
+    return labels[category] || category;
+  };
 
   const handleChangeEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -203,6 +316,132 @@ const Settings: React.FC = () => {
                 )}
               </Button>
             </form>
+          </CardContent>
+        </Card>
+
+        {/* Notification Preferences */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Evenemangsnotifikationer
+            </CardTitle>
+            <CardDescription>
+              Hantera dina prenumerationer för e-postnotifikationer om nya evenemang.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {notificationsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground">
+                <BellOff className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                <p>Du har inga aktiva notifikationer.</p>
+                <p className="text-sm mt-1">
+                  Prenumerera på evenemang från startsidan för att få notifikationer.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {notifications.map((notification) => (
+                  <div 
+                    key={notification.id} 
+                    className="flex items-start justify-between gap-4 p-4 border rounded-lg"
+                  >
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm">{notification.email}</p>
+                        <Badge variant={notification.is_active ? "default" : "secondary"}>
+                          {notification.is_active ? "Aktiv" : "Pausad"}
+                        </Badge>
+                      </div>
+                      
+                      {notification.filters && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {notification.filters.location && (
+                            <Badge variant="outline" className="text-xs">
+                              📍 {notification.filters.location}
+                            </Badge>
+                          )}
+                          {notification.filters.category && (
+                            <Badge variant="outline" className="text-xs">
+                              🎭 {getCategoryLabel(notification.filters.category)}
+                            </Badge>
+                          )}
+                          {notification.filters.freeOnly && (
+                            <Badge variant="outline" className="text-xs">
+                              💰 Endast gratis
+                            </Badge>
+                          )}
+                          {notification.filters.keywords && notification.filters.keywords.length > 0 && (
+                            <Badge variant="outline" className="text-xs">
+                              🔍 {notification.filters.keywords.join(", ")}
+                            </Badge>
+                          )}
+                          {!notification.filters.location && 
+                           !notification.filters.category && 
+                           !notification.filters.freeOnly && 
+                           (!notification.filters.keywords || notification.filters.keywords.length === 0) && (
+                            <span className="text-xs text-muted-foreground">Alla evenemang</span>
+                          )}
+                        </div>
+                      )}
+                      
+                      {!notification.filters && (
+                        <span className="text-xs text-muted-foreground">Alla evenemang</span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={notification.is_active}
+                          onCheckedChange={() => toggleNotification(notification.id, notification.is_active)}
+                          disabled={togglingId === notification.id}
+                        />
+                      </div>
+                      
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            disabled={deletingId === notification.id}
+                          >
+                            {deletingId === notification.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Ta bort prenumeration?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Du kommer inte längre att få e-postnotifikationer för dessa evenemang.
+                              Du kan alltid prenumerera igen från startsidan.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteNotification(notification.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Ta bort
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
