@@ -114,8 +114,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`${matchingSubscriptions.length} subscriptions match the event`);
 
-    const siteUrl = Deno.env.get("SITE_URL") || "https://szmnfthiblejkjfdbeba.lovableproject.com";
-    
+    const siteUrlRaw = Deno.env.get("SITE_URL") || "https://szmnfthiblejkjfdbeba.lovableproject.com";
+    const siteUrl = siteUrlRaw.replace(/\/+$/, "");
+
     // Send emails to matching subscribers
     const emailPromises = matchingSubscriptions.map(async (sub) => {
       const unsubscribeUrl = `${siteUrl}/unsubscribe?id=${sub.id}&email=${encodeURIComponent(sub.email)}`;
