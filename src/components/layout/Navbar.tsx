@@ -105,7 +105,7 @@ export const Navbar: React.FC = () => {
         <Link to="/" className="flex items-center" aria-label="NowInTown Home">
           <span className="font-bold text-xl tracking-tight">
             <span style={{ color: '#1a3a5c' }}>Now</span>
-            <span style={{ color: '#f5a623' }}>In</span>
+            <span style={{ color: '#f5a623', marginLeft: '2px', marginRight: '2px' }}>In</span>
             <span style={{ color: '#1a3a5c' }}>Town</span>
           </span>
         </Link>
