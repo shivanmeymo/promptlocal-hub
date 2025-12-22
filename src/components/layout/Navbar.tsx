@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, User, Calendar, LogOut, Shield, Settings } from 'lucide-react';
+import logo from '@/assets/logo.jpg';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -102,13 +103,8 @@ export const Navbar: React.FC = () => {
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
       <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2" aria-label="NowInTown Home">
-          <span className="text-2xl">✨</span>
-          <span className="font-display font-bold text-xl">
-            <span className="text-primary">Now</span>
-            <span className="text-accent">In</span>
-            <span className="text-foreground">Town</span>
-          </span>
+        <Link to="/" className="flex items-center" aria-label="NowInTown Home">
+          <img src={logo} alt="NowInTown" className="h-10 w-auto" />
         </Link>
 
         {/* Desktop Navigation */}
