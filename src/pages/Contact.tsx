@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Mail, Phone, MapPin, Clock, Send } from 'lucide-react';
+import { Mail, Phone, MapPin, Clock, Send, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,27 @@ import { Layout } from '@/components/layout/Layout';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+
+// Cloudflare Turnstile site key (public)
+// Note: this is safe to ship in frontend. Domain restrictions are enforced in Turnstile settings.
+const TURNSTILE_SITE_KEY = "0x4AAAAAACH5AgxC_kb_RAge";
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: string | HTMLElement, options: {
+        sitekey: string;
+        callback: (token: string) => void;
+        'error-callback'?: () => void;
+        'expired-callback'?: () => void;
+        theme?: 'light' | 'dark' | 'auto';
+        size?: 'normal' | 'compact';
+      }) => string;
+      reset: (widgetId: string) => void;
+      remove: (widgetId: string) => void;
+    };
+  }
+}
 
 const Contact: React.FC = () => {
   const { t, language } = useLanguage();
@@ -24,6 +45,12 @@ const Contact: React.FC = () => {
     message: '',
   });
 
+  // CAPTCHA state
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaWidgetId, setCaptchaWidgetId] = useState<string | null>(null);
+  const [captchaError, setCaptchaError] = useState<string | null>(null);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
+
   const categories = [
     { value: 'general', label: language === 'sv' ? 'Allmän förfrågan' : 'General Inquiry' },
     { value: 'support', label: language === 'sv' ? 'Support' : 'Support' },
@@ -32,11 +59,154 @@ const Contact: React.FC = () => {
     { value: 'other', label: language === 'sv' ? 'Övrigt' : 'Other' },
   ];
 
+  // Load Turnstile script
+  useEffect(() => {
+    const existing = document.getElementById('turnstile-script') as HTMLScriptElement | null;
+
+    if (existing) {
+      if (window.turnstile) {
+        setScriptLoaded(true);
+        return;
+      }
+
+      const onLoad = () => setScriptLoaded(true);
+      existing.addEventListener('load', onLoad);
+      return () => existing.removeEventListener('load', onLoad);
+    }
+
+    const script = document.createElement('script');
+    script.id = 'turnstile-script';
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setScriptLoaded(true);
+    script.onerror = () => {
+      setCaptchaError(
+        language === 'sv'
+          ? 'Captcha kunde inte laddas (blockerad eller felaktig nyckel).'
+          : 'Captcha failed to load (blocked or invalid key).'
+      );
+    };
+    document.head.appendChild(script);
+  }, [language]);
+
+  // Cleanup widget on unmount
+  useEffect(() => {
+    return () => {
+      if (captchaWidgetId && window.turnstile) {
+        window.turnstile.remove(captchaWidgetId);
+      }
+    };
+  }, [captchaWidgetId]);
+
+  // Render Turnstile widget
+  const renderCaptcha = useCallback(() => {
+    const container = document.getElementById('contact-turnstile-container');
+    if (!container || !window.turnstile) return;
+
+    // Clear existing widget + reset token
+    container.innerHTML = '';
+    setCaptchaToken(null);
+    setCaptchaError(null);
+
+    const widgetId = window.turnstile.render(container, {
+      sitekey: TURNSTILE_SITE_KEY,
+      callback: (token: string) => {
+        setCaptchaToken(token);
+        setCaptchaError(null);
+      },
+      'error-callback': () => {
+        const host = window.location.hostname;
+        setCaptchaToken(null);
+        setCaptchaError(
+          language === 'sv'
+            ? `Captcha fungerar inte på denna domän (${host}). Lägg till domänen i Turnstile-inställningarna.`
+            : `Captcha is not working on this domain (${host}). Add it to the allowed domains for your Turnstile site key.`
+        );
+      },
+      'expired-callback': () => {
+        setCaptchaToken(null);
+      },
+      theme: 'auto',
+      size: 'normal',
+    });
+
+    setCaptchaWidgetId(widgetId);
+  }, [language]);
+
+  // Render captcha when script loads
+  useEffect(() => {
+    if (!scriptLoaded) return;
+
+    let tries = 0;
+    const maxTries = 60;
+
+    const tick = () => {
+      const container = document.getElementById('contact-turnstile-container');
+      if (container && window.turnstile) {
+        renderCaptcha();
+        return;
+      }
+
+      tries += 1;
+      if (tries >= maxTries) {
+        setCaptchaError(
+          language === 'sv'
+            ? 'Captcha kunde inte initieras. Kontrollera att Turnstile-scriptet inte blockeras.'
+            : 'Captcha could not initialize. Check if the Turnstile script is being blocked.'
+        );
+        return;
+      }
+      window.setTimeout(tick, 100);
+    };
+
+    tick();
+  }, [scriptLoaded, renderCaptcha, language]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Verify captcha
+    if (!captchaToken) {
+      toast({
+        title: language === 'sv' ? 'Verifiering krävs' : 'Verification required',
+        description:
+          captchaError ||
+          (language === 'sv'
+            ? 'Vänligen slutför captcha-verifieringen.'
+            : 'Please complete the captcha verification.'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
+      // Verify captcha token with backend
+      const { data: captchaResult, error: captchaInvokeError } = await supabase.functions.invoke('verify-captcha', {
+        body: { token: captchaToken },
+      });
+
+      if (captchaInvokeError || !captchaResult?.success) {
+        toast({
+          title: language === 'sv' ? 'Verifiering misslyckades' : 'Verification failed',
+          description:
+            language === 'sv'
+              ? 'Captcha-verifieringen misslyckades. Försök igen.'
+              : 'Captcha verification failed. Please try again.',
+          variant: 'destructive',
+        });
+
+        if (captchaWidgetId && window.turnstile) {
+          window.turnstile.reset(captchaWidgetId);
+        }
+        setCaptchaToken(null);
+        setLoading(false);
+        return;
+      }
+
+      // Submit contact message
       const { error } = await supabase.from('contact_messages').insert({
         name: formData.name,
         email: formData.email,
@@ -68,12 +238,24 @@ const Contact: React.FC = () => {
       });
 
       setFormData({ name: '', email: '', phone: '', category: '', message: '' });
+      
+      // Reset captcha after successful submission
+      if (captchaWidgetId && window.turnstile) {
+        window.turnstile.reset(captchaWidgetId);
+      }
+      setCaptchaToken(null);
     } catch (error) {
       toast({
         title: t('common.error'),
         description: (error as Error).message,
         variant: 'destructive',
       });
+
+      // Reset captcha on error
+      if (captchaWidgetId && window.turnstile) {
+        window.turnstile.reset(captchaWidgetId);
+      }
+      setCaptchaToken(null);
     }
 
     setLoading(false);
@@ -252,7 +434,32 @@ const Contact: React.FC = () => {
                   />
                 </div>
 
-                <Button type="submit" className="w-full bg-accent hover:bg-accent/90" disabled={loading}>
+                {/* CAPTCHA Widget */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Shield className="w-4 h-4" />
+                    <span>
+                      {language === 'sv'
+                        ? 'Vänligen verifiera att du inte är en robot'
+                        : 'Please verify you are not a robot'}
+                    </span>
+                  </div>
+                  <div id="contact-turnstile-container" className="min-h-[65px]" />
+                  {captchaError && (
+                    <p className="text-sm text-destructive">{captchaError}</p>
+                  )}
+                  {captchaToken && (
+                    <p className="text-sm text-green-600">
+                      {language === 'sv' ? '✓ Verifierad' : '✓ Verified'}
+                    </p>
+                  )}
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full bg-accent hover:bg-accent/90" 
+                  disabled={loading || !captchaToken}
+                >
                   <Send className="w-4 h-4 mr-2" />
                   {loading ? t('common.loading') : t('contact.submit')}
                 </Button>
