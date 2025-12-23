@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Search, Calendar, MapPin, Bell, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -12,21 +12,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-interface TurnstileInstance {
-  render: (container: string | HTMLElement, options: {
-    sitekey: string;
-    callback: (token: string) => void;
-    'error-callback': () => void;
-    'expired-callback': () => void;
-    theme?: 'light' | 'dark' | 'auto';
-  }) => string;
-  reset: (widgetId: string) => void;
-  remove: (widgetId: string) => void;
-}
-
-const getTurnstile = (): TurnstileInstance | undefined => {
-  return (window as unknown as { turnstile?: TurnstileInstance }).turnstile;
-};
 interface EventFiltersProps {
   onSearchChange: (value: string) => void;
   onDateChange: (value: string) => void;
@@ -63,91 +48,11 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
   const [notifyDialogOpen, setNotifyDialogOpen] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const [captchaWidgetId, setCaptchaWidgetId] = useState<string | null>(null);
-  const captchaContainerRef = useRef<HTMLDivElement>(null);
   const [selectedFilters, setSelectedFilters] = useState({
     date: '',
     location: '',
     category: '',
   });
-
-  // Load Turnstile script
-  useEffect(() => {
-    const scriptId = 'turnstile-script';
-    if (!document.getElementById(scriptId)) {
-      const script = document.createElement('script');
-      script.id = scriptId;
-      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-      script.async = true;
-      script.defer = true;
-      document.head.appendChild(script);
-    }
-  }, []);
-
-  // Initialize captcha when dialog opens
-  useEffect(() => {
-    if (!notifyDialogOpen) return;
-
-    let mounted = true;
-    let widgetId: string | null = null;
-
-    const initCaptcha = () => {
-      const turnstile = getTurnstile();
-      if (!turnstile || !captchaContainerRef.current || !mounted) {
-        // Retry if Turnstile not loaded yet
-        if (mounted) {
-          setTimeout(initCaptcha, 200);
-        }
-        return;
-      }
-
-      // Clean up any existing widget
-      if (captchaWidgetId) {
-        try {
-          turnstile.remove(captchaWidgetId);
-        } catch (e) {
-          // Widget might already be removed
-        }
-      }
-      setCaptchaToken(null);
-
-      try {
-        widgetId = turnstile.render(captchaContainerRef.current, {
-          sitekey: '0x4AAAAAABbI8d5TIqpAMCqR',
-          callback: (token: string) => {
-            if (mounted) setCaptchaToken(token);
-          },
-          'error-callback': () => {
-            if (mounted) setCaptchaToken(null);
-          },
-          'expired-callback': () => {
-            if (mounted) setCaptchaToken(null);
-          },
-          theme: 'auto',
-        });
-        if (mounted) setCaptchaWidgetId(widgetId);
-      } catch (e) {
-        console.error('Failed to render Turnstile widget:', e);
-      }
-    };
-
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(initCaptcha, 100);
-
-    return () => {
-      mounted = false;
-      clearTimeout(timer);
-      const turnstile = getTurnstile();
-      if (widgetId && turnstile) {
-        try {
-          turnstile.remove(widgetId);
-        } catch (e) {
-          // Widget might already be removed
-        }
-      }
-    };
-  }, [notifyDialogOpen]);
 
   const handleFreeOnlyChange = (checked: boolean) => {
     setFreeOnly(checked);
@@ -213,40 +118,9 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
       return;
     }
 
-    // Verify CAPTCHA
-    if (!captchaToken) {
-      toast({
-        title: language === 'sv' ? 'Verifiering krävs' : 'Verification required',
-        description: language === 'sv' ? 'Vänligen slutför captcha-verifieringen.' : 'Please complete the captcha verification.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
-      // Verify captcha server-side
-      const { data: captchaResult, error: captchaError } = await supabase.functions.invoke('verify-captcha', {
-        body: { token: captchaToken }
-      });
-
-      if (captchaError || !captchaResult?.success) {
-        console.error('CAPTCHA verification failed:', captchaError);
-        toast({
-          title: language === 'sv' ? 'Verifiering misslyckades' : 'Verification failed',
-          description: language === 'sv' ? 'Captcha-verifieringen misslyckades. Försök igen.' : 'Captcha verification failed. Please try again.',
-          variant: 'destructive',
-        });
-        // Reset captcha
-        const turnstile = getTurnstile();
-        if (captchaWidgetId && turnstile) {
-          turnstile.reset(captchaWidgetId);
-        }
-        setCaptchaToken(null);
-        return;
-      }
-
       // Build filters object with current selections
       const filters = {
         location: selectedFilters.location || null,
@@ -458,11 +332,6 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
                     />
                   </div>
                 )}
-
-                {/* CAPTCHA Widget */}
-                <div className="flex justify-center">
-                  <div ref={captchaContainerRef} />
-                </div>
               </div>
 
               <DialogFooter>
