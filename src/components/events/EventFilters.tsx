@@ -78,7 +78,7 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
     if (!document.getElementById(scriptId)) {
       const script = document.createElement('script');
       script.id = scriptId;
-      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
       script.async = true;
       script.defer = true;
       document.head.appendChild(script);
@@ -87,8 +87,21 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
 
   // Initialize captcha when dialog opens
   useEffect(() => {
-    const turnstile = getTurnstile();
-    if (notifyDialogOpen && captchaContainerRef.current && turnstile) {
+    if (!notifyDialogOpen) return;
+
+    let mounted = true;
+    let widgetId: string | null = null;
+
+    const initCaptcha = () => {
+      const turnstile = getTurnstile();
+      if (!turnstile || !captchaContainerRef.current || !mounted) {
+        // Retry if Turnstile not loaded yet
+        if (mounted) {
+          setTimeout(initCaptcha, 200);
+        }
+        return;
+      }
+
       // Clean up any existing widget
       if (captchaWidgetId) {
         try {
@@ -99,45 +112,41 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
       }
       setCaptchaToken(null);
 
-      // Small delay to ensure DOM is ready
-      const timer = setTimeout(() => {
-        const ts = getTurnstile();
-        if (captchaContainerRef.current && ts) {
-          const widgetId = ts.render(captchaContainerRef.current, {
-            sitekey: '0x4AAAAAABbI8d5TIqpAMCqR',
-            callback: (token: string) => {
-              setCaptchaToken(token);
-            },
-            'error-callback': () => {
-              setCaptchaToken(null);
-            },
-            'expired-callback': () => {
-              setCaptchaToken(null);
-            },
-            theme: 'auto',
-          });
-          setCaptchaWidgetId(widgetId);
-        }
-      }, 100);
+      try {
+        widgetId = turnstile.render(captchaContainerRef.current, {
+          sitekey: '0x4AAAAAABbI8d5TIqpAMCqR',
+          callback: (token: string) => {
+            if (mounted) setCaptchaToken(token);
+          },
+          'error-callback': () => {
+            if (mounted) setCaptchaToken(null);
+          },
+          'expired-callback': () => {
+            if (mounted) setCaptchaToken(null);
+          },
+          theme: 'auto',
+        });
+        if (mounted) setCaptchaWidgetId(widgetId);
+      } catch (e) {
+        console.error('Failed to render Turnstile widget:', e);
+      }
+    };
 
-      return () => clearTimeout(timer);
-    }
-  }, [notifyDialogOpen]);
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(initCaptcha, 100);
 
-  // Cleanup on dialog close
-  useEffect(() => {
-    if (!notifyDialogOpen && captchaWidgetId) {
+    return () => {
+      mounted = false;
+      clearTimeout(timer);
       const turnstile = getTurnstile();
-      if (turnstile) {
+      if (widgetId && turnstile) {
         try {
-          turnstile.remove(captchaWidgetId);
+          turnstile.remove(widgetId);
         } catch (e) {
           // Widget might already be removed
         }
       }
-      setCaptchaWidgetId(null);
-      setCaptchaToken(null);
-    }
+    };
   }, [notifyDialogOpen]);
 
   const handleFreeOnlyChange = (checked: boolean) => {
