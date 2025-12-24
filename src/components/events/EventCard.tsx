@@ -21,6 +21,8 @@ interface Event {
   image_url?: string;
   status: string;
   organizer_name?: string;
+  source?: 'local' | 'tickster';
+  source_url?: string;
 }
 
 interface EventCardProps {
@@ -66,12 +68,10 @@ export const EventCard: React.FC<EventCardProps> = ({ event, isOwner, onEdit }) 
     return colors[category] || colors.other;
   };
 
-  return (
-    <Link 
-      to={`/event/${event.id}`}
-      aria-label={`${event.title} - ${formatDate(event.start_date)} ${language === 'sv' ? 'i' : 'in'} ${event.location}`}
-    >
-      <article className="h-full">
+  const isExternal = event.source === 'tickster' && event.source_url;
+
+  const cardContent = (
+    <article className="h-full">
         <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300 animate-fade-in cursor-pointer h-full focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2">
           <CardHeader className="p-0 relative">
             <figure className="aspect-video bg-muted relative overflow-hidden m-0">
@@ -162,10 +162,36 @@ export const EventCard: React.FC<EventCardProps> = ({ event, isOwner, onEdit }) 
                   {t('events.pending')}
                 </Badge>
               )}
+              {event.source === 'tickster' && (
+                <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50">
+                  Tickster
+                </Badge>
+              )}
             </div>
           </CardContent>
         </Card>
       </article>
+  );
+
+  if (isExternal) {
+    return (
+      <a
+        href={event.source_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`${event.title} - ${formatDate(event.start_date)} ${language === 'sv' ? 'i' : 'in'} ${event.location} (${language === 'sv' ? 'öppnas i nytt fönster' : 'opens in new window'})`}
+      >
+        {cardContent}
+      </a>
+    );
+  }
+
+  return (
+    <Link 
+      to={`/event/${event.id}`}
+      aria-label={`${event.title} - ${formatDate(event.start_date)} ${language === 'sv' ? 'i' : 'in'} ${event.location}`}
+    >
+      {cardContent}
     </Link>
   );
 };

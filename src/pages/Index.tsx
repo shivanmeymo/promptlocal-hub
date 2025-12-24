@@ -23,6 +23,26 @@ interface Event {
   image_url?: string;
   status: string;
   organizer_name?: string;
+  source?: 'local' | 'tickster';
+  source_url?: string;
+}
+
+interface TicksterEvent {
+  external_id: string;
+  title: string;
+  description: string;
+  start_date: string;
+  start_time: string;
+  end_date: string;
+  end_time: string;
+  location: string;
+  category: string;
+  is_free: boolean;
+  price?: number;
+  image_url?: string;
+  organizer_name?: string;
+  source: string;
+  source_url?: string;
 }
 
 const Index: React.FC = () => {
@@ -49,15 +69,55 @@ const Index: React.FC = () => {
 
   const fetchEvents = async () => {
     setLoading(true);
-    // Use public_events view which excludes sensitive data like organizer_email
-    const { data, error } = await supabase
-      .from('public_events')
-      .select('*')
-      .order('start_date', { ascending: true });
+    
+    // Fetch local events and Tickster events in parallel
+    const [localResult, ticksterResult] = await Promise.all([
+      supabase
+        .from('public_events')
+        .select('*')
+        .order('start_date', { ascending: true }),
+      supabase.functions.invoke('fetch-tickster-events', {
+        body: { limit: 50 }
+      }).catch(err => {
+        console.error('Failed to fetch Tickster events:', err);
+        return { data: null, error: err };
+      })
+    ]);
 
-    if (!error && data) {
-      setEvents(data as Event[]);
+    const localEvents: Event[] = (localResult.data || []).map((e: any) => ({
+      ...e,
+      source: 'local' as const
+    }));
+
+    // Transform Tickster events
+    let ticksterEvents: Event[] = [];
+    if (ticksterResult.data?.events) {
+      ticksterEvents = ticksterResult.data.events.map((e: TicksterEvent) => ({
+        id: e.external_id,
+        title: e.title,
+        description: e.description,
+        start_date: e.start_date,
+        start_time: e.start_time,
+        end_date: e.end_date,
+        end_time: e.end_time,
+        location: e.location,
+        category: e.category,
+        is_free: e.is_free,
+        price: e.price,
+        image_url: e.image_url,
+        status: 'approved',
+        organizer_name: e.organizer_name,
+        source: 'tickster' as const,
+        source_url: e.source_url
+      }));
     }
+
+    // Merge and sort by start_date
+    const allEvents = [...localEvents, ...ticksterEvents].sort((a, b) => 
+      new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+    );
+
+    setEvents(allEvents);
     setLoading(false);
   };
 
