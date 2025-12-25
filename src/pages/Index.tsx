@@ -73,7 +73,7 @@ const Index: React.FC = () => {
     // Fetch local events and Tickster events in parallel
     const [localResult, ticksterResult] = await Promise.all([
       supabase
-        .from('public_events')
+        .from('events_public')
         .select('*')
         .order('start_date', { ascending: true }),
       supabase.functions.invoke('fetch-tickster-events', {

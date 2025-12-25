@@ -191,6 +191,75 @@ export type Database = {
         }
         Relationships: []
       }
+      events_public: {
+        Row: {
+          approved_at: string | null
+          category: Database["public"]["Enums"]["event_category"]
+          created_at: string
+          description: string
+          end_date: string
+          end_time: string
+          id: string
+          image_url: string | null
+          is_free: boolean
+          location: string
+          organizer_description: string | null
+          organizer_name: string
+          organizer_website: string | null
+          other_category: string | null
+          price: number | null
+          start_date: string
+          start_time: string
+          status: Database["public"]["Enums"]["event_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          category: Database["public"]["Enums"]["event_category"]
+          created_at?: string
+          description: string
+          end_date: string
+          end_time: string
+          id: string
+          image_url?: string | null
+          is_free?: boolean
+          location: string
+          organizer_description?: string | null
+          organizer_name: string
+          organizer_website?: string | null
+          other_category?: string | null
+          price?: number | null
+          start_date: string
+          start_time: string
+          status: Database["public"]["Enums"]["event_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          category?: Database["public"]["Enums"]["event_category"]
+          created_at?: string
+          description?: string
+          end_date?: string
+          end_time?: string
+          id?: string
+          image_url?: string | null
+          is_free?: boolean
+          location?: string
+          organizer_description?: string | null
+          organizer_name?: string
+          organizer_website?: string | null
+          other_category?: string | null
+          price?: number | null
+          start_date?: string
+          start_time?: string
+          status?: Database["public"]["Enums"]["event_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

@@ -55,9 +55,9 @@ const EventDetails: React.FC = () => {
   }, [id]);
 
   const fetchEvent = async () => {
-    // Use public_events view which excludes organizer_email for public access
+    // Use events_public table which excludes organizer_email for public access
     const { data, error } = await supabase
-      .from('public_events')
+      .from('events_public')
       .select('*')
       .eq('id', id)
       .maybeSingle();
