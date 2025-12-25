@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -45,111 +45,91 @@ interface TicksterEvent {
   source_url?: string;
 }
 
+interface Filters {
+  search: string;
+  date: string;
+  location: string;
+  category: string;
+  freeOnly: boolean;
+  keywords: string[];
+}
+
 const Index: React.FC = () => {
   const { t, language } = useLanguage();
   const [events, setEvents] = useState<Event[]>([]);
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<Filters>({
     search: '',
     date: '',
     location: '',
     category: '',
     freeOnly: false,
-    keywords: [] as string[],
+    keywords: [],
   });
 
   useEffect(() => {
+    const fetchEvents = async () => {
+      setLoading(true);
+      
+      const [localResult, ticksterResult] = await Promise.all([
+        supabase.from('events_public').select('*').order('start_date', { ascending: true }),
+        supabase.functions.invoke('fetch-tickster-events', { body: { limit: 50 } }).catch(() => ({ data: null }))
+      ]);
+
+      const localEvents: Event[] = (localResult.data || []).map((e: any) => ({ ...e, source: 'local' as const }));
+
+      let ticksterEvents: Event[] = [];
+      if (ticksterResult.data?.events) {
+        ticksterEvents = ticksterResult.data.events.map((e: TicksterEvent) => ({
+          id: e.external_id,
+          title: e.title,
+          description: e.description,
+          start_date: e.start_date,
+          start_time: e.start_time,
+          end_date: e.end_date,
+          end_time: e.end_time,
+          location: e.location,
+          category: e.category,
+          is_free: e.is_free,
+          price: e.price,
+          image_url: e.image_url,
+          status: 'approved',
+          organizer_name: e.organizer_name,
+          source: 'tickster' as const,
+          source_url: e.source_url
+        }));
+      }
+
+      const allEvents = [...localEvents, ...ticksterEvents].sort((a, b) => 
+        new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+      );
+
+      setEvents(allEvents);
+      setLoading(false);
+    };
+
     fetchEvents();
   }, []);
 
-  useEffect(() => {
-    applyFilters();
-  }, [events, filters]);
+  const filteredEvents = useMemo(() => {
+    let result = events;
 
-  const fetchEvents = async () => {
-    setLoading(true);
-    
-    // Fetch local events and Tickster events in parallel
-    const [localResult, ticksterResult] = await Promise.all([
-      supabase
-        .from('events_public')
-        .select('*')
-        .order('start_date', { ascending: true }),
-      supabase.functions.invoke('fetch-tickster-events', {
-        body: { limit: 50 }
-      }).catch(err => {
-        console.error('Failed to fetch Tickster events:', err);
-        return { data: null, error: err };
-      })
-    ]);
-
-    const localEvents: Event[] = (localResult.data || []).map((e: any) => ({
-      ...e,
-      source: 'local' as const
-    }));
-
-    // Transform Tickster events
-    let ticksterEvents: Event[] = [];
-    if (ticksterResult.data?.events) {
-      ticksterEvents = ticksterResult.data.events.map((e: TicksterEvent) => ({
-        id: e.external_id,
-        title: e.title,
-        description: e.description,
-        start_date: e.start_date,
-        start_time: e.start_time,
-        end_date: e.end_date,
-        end_time: e.end_time,
-        location: e.location,
-        category: e.category,
-        is_free: e.is_free,
-        price: e.price,
-        image_url: e.image_url,
-        status: 'approved',
-        organizer_name: e.organizer_name,
-        source: 'tickster' as const,
-        source_url: e.source_url
-      }));
-    }
-
-    // Merge and sort by start_date
-    const allEvents = [...localEvents, ...ticksterEvents].sort((a, b) => 
-      new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
-    );
-
-    setEvents(allEvents);
-    setLoading(false);
-  };
-
-  const applyFilters = () => {
-    let result = [...events];
-
-    // Apply keyword search
     if (filters.keywords.length > 0) {
       result = result.filter((e) =>
         filters.keywords.some(keyword => {
           const kw = keyword.toLowerCase();
-          return (
-            e.title.toLowerCase().includes(kw) ||
-            e.description.toLowerCase().includes(kw) ||
-            e.location.toLowerCase().includes(kw)
-          );
+          return e.title.toLowerCase().includes(kw) || e.description.toLowerCase().includes(kw) || e.location.toLowerCase().includes(kw);
         })
       );
     } else if (filters.search) {
       const searchLower = filters.search.toLowerCase();
-      result = result.filter(
-        (e) =>
-          e.title.toLowerCase().includes(searchLower) ||
-          e.description.toLowerCase().includes(searchLower) ||
-          e.location.toLowerCase().includes(searchLower)
+      result = result.filter((e) =>
+        e.title.toLowerCase().includes(searchLower) || e.description.toLowerCase().includes(searchLower) || e.location.toLowerCase().includes(searchLower)
       );
     }
 
     if (filters.location) {
-      result = result.filter((e) =>
-        e.location.toLowerCase().includes(filters.location.toLowerCase())
-      );
+      result = result.filter((e) => e.location.toLowerCase().includes(filters.location.toLowerCase()));
     }
 
     if (filters.category) {
@@ -189,22 +169,23 @@ const Index: React.FC = () => {
       });
     }
 
-    setFilteredEvents(result);
-  };
+    return result;
+  }, [events, filters]);
 
-  const scrollToEvents = () => {
+  const updateFilter = useCallback(<K extends keyof Filters>(key: K, value: Filters[K]) => {
+    setFilters(f => ({ ...f, [key]: value }));
+  }, []);
+
+
+  const scrollToEvents = useCallback(() => {
     const element = document.getElementById('events-section');
     if (element) {
-      const offset = 80; // Account for sticky header
+      const offset = 80;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - offset;
-      
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
+      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
     }
-  };
+  }, []);
 
   return (
     <Layout>
@@ -268,12 +249,12 @@ const Index: React.FC = () => {
           className="container mx-auto px-4 -mt-8 relative z-10"
         >
           <EventFilters
-            onSearchChange={(value) => setFilters((f) => ({ ...f, search: value }))}
-            onDateChange={(value) => setFilters((f) => ({ ...f, date: value }))}
-            onLocationChange={(value) => setFilters((f) => ({ ...f, location: value }))}
-            onCategoryChange={(value) => setFilters((f) => ({ ...f, category: value }))}
-            onFreeOnlyChange={(value) => setFilters((f) => ({ ...f, freeOnly: value }))}
-            onKeywordsChange={(keywords) => setFilters((f) => ({ ...f, keywords }))}
+            onSearchChange={(value) => updateFilter('search', value)}
+            onDateChange={(value) => updateFilter('date', value)}
+            onLocationChange={(value) => updateFilter('location', value)}
+            onCategoryChange={(value) => updateFilter('category', value)}
+            onFreeOnlyChange={(value) => updateFilter('freeOnly', value)}
+            onKeywordsChange={(keywords) => updateFilter('keywords', keywords)}
           />
         </section>
 
