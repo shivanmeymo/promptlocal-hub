@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock, MapPin, User, Globe, Share2, Copy, Check, Edit2 } from 'lucide-react';
@@ -14,6 +14,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { getCategoryColor, formatDateLong, formatTime } from '@/lib/format';
 
 interface Event {
   id: string;
@@ -49,56 +50,39 @@ const EventDetails: React.FC = () => {
   const isOwner = user && event && user.id === event.user_id;
 
   useEffect(() => {
-    if (id) {
-      fetchEvent();
-    }
-  }, [id]);
-
-  const fetchEvent = async () => {
-    // Use events_public table which excludes organizer_email for public access
-    const { data, error } = await supabase
+    if (!id) return;
+    
+    supabase
       .from('events_public')
       .select('*')
       .eq('id', id)
-      .maybeSingle();
-
-    if (error || !data) {
-      toast({
-        title: t('common.error'),
-        description: language === 'sv' ? 'Event hittades inte' : 'Event not found',
-        variant: 'destructive',
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error || !data) {
+          toast({
+            title: t('common.error'),
+            description: language === 'sv' ? 'Event hittades inte' : 'Event not found',
+            variant: 'destructive',
+          });
+          navigate('/');
+        } else {
+          setEvent(data as Event);
+        }
+        setLoading(false);
       });
-      navigate('/');
-    } else {
-      setEvent(data as Event);
-    }
-    setLoading(false);
-  };
+  }, [id, navigate, toast, t, language]);
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString(language === 'sv' ? 'sv-SE' : 'en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  const formatTime = (timeStr: string) => {
-    return timeStr.slice(0, 5);
-  };
-
-  const handleShare = async (method: 'copy' | 'twitter' | 'facebook' | 'instagram' | 'email') => {
+  const handleShare = useCallback(async (method: 'copy' | 'twitter' | 'facebook' | 'instagram' | 'email') => {
+    if (!event) return;
+    
     const url = window.location.href;
-    const text = `${event?.title} - ${formatDate(event?.start_date || '')}`;
+    const text = `${event.title} - ${formatDateLong(event.start_date, language)}`;
 
     switch (method) {
       case 'copy':
         await navigator.clipboard.writeText(url);
         setCopied(true);
-        toast({
-          title: language === 'sv' ? 'Länk kopierad!' : 'Link copied!',
-        });
+        toast({ title: language === 'sv' ? 'Länk kopierad!' : 'Link copied!' });
         setTimeout(() => setCopied(false), 2000);
         break;
       case 'twitter':
@@ -115,43 +99,31 @@ const EventDetails: React.FC = () => {
         });
         break;
       case 'email':
-        window.location.href = `mailto:?subject=${encodeURIComponent(event?.title || '')}&body=${encodeURIComponent(text + '\n\n' + url)}`;
+        window.location.href = `mailto:?subject=${encodeURIComponent(event.title)}&body=${encodeURIComponent(text + '\n\n' + url)}`;
         break;
     }
-  };
-
-  const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
-      music: 'bg-purple-100 text-purple-800',
-      sports: 'bg-green-100 text-green-800',
-      art: 'bg-pink-100 text-pink-800',
-      food: 'bg-orange-100 text-orange-800',
-      business: 'bg-blue-100 text-blue-800',
-      education: 'bg-indigo-100 text-indigo-800',
-      community: 'bg-teal-100 text-teal-800',
-      other: 'bg-gray-100 text-gray-800',
-    };
-    return colors[category] || colors.other;
-  };
+  }, [event, language, toast]);
 
   if (loading) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-12">
-          <div className="animate-pulse">
-            <div className="h-8 bg-muted rounded w-32 mb-6" />
-            <div className="aspect-video bg-muted rounded-xl mb-8" />
-            <div className="h-10 bg-muted rounded w-3/4 mb-4" />
-            <div className="h-4 bg-muted rounded w-1/2" />
-          </div>
+        <div className="container mx-auto px-4 py-12" aria-busy="true">
+          <div className="h-8 bg-muted rounded w-32 mb-6" />
+          <div className="aspect-video bg-muted rounded-xl mb-8" />
+          <div className="h-10 bg-muted rounded w-3/4 mb-4" />
+          <div className="h-4 bg-muted rounded w-1/2" />
         </div>
       </Layout>
     );
   }
 
-  if (!event) {
-    return null;
-  }
+  if (!event) return null;
+
+  const categoryColor = getCategoryColor(event.category);
+  const startDateFormatted = formatDateLong(event.start_date, language);
+  const endDateFormatted = formatDateLong(event.end_date, language);
+  const startTimeFormatted = formatTime(event.start_time);
+  const endTimeFormatted = formatTime(event.end_time);
 
   return (
     <Layout>
@@ -192,7 +164,7 @@ const EventDetails: React.FC = () => {
             {/* Event Title & Category */}
             <div>
               <div className="flex items-center gap-3 mb-3">
-                <Badge className={getCategoryColor(event.category)}>
+                <Badge className={categoryColor}>
                   {t(`category.${event.category}`)}
                 </Badge>
                 {event.is_online && (
@@ -217,11 +189,11 @@ const EventDetails: React.FC = () => {
             <div className="flex flex-wrap gap-6 text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-primary" />
-                <span>{formatDate(event.start_date)}</span>
+                <span>{startDateFormatted}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-primary" />
-                <span>{formatTime(event.start_time)} - {formatTime(event.end_time)}</span>
+                <span>{startTimeFormatted} - {endTimeFormatted}</span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-primary" />
@@ -330,16 +302,16 @@ const EventDetails: React.FC = () => {
                   <p className="text-sm text-muted-foreground">
                     {language === 'sv' ? 'Startdatum' : 'Start Date'}
                   </p>
-                  <p className="font-medium">{formatDate(event.start_date)}</p>
-                  <p className="text-sm">{formatTime(event.start_time)}</p>
+                  <p className="font-medium">{startDateFormatted}</p>
+                  <p className="text-sm">{startTimeFormatted}</p>
                 </div>
                 <Separator />
                 <div>
                   <p className="text-sm text-muted-foreground">
                     {language === 'sv' ? 'Slutdatum' : 'End Date'}
                   </p>
-                  <p className="font-medium">{formatDate(event.end_date)}</p>
-                  <p className="text-sm">{formatTime(event.end_time)}</p>
+                  <p className="font-medium">{endDateFormatted}</p>
+                  <p className="text-sm">{endTimeFormatted}</p>
                 </div>
                 <Separator />
                 <div>
