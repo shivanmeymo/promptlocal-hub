@@ -300,7 +300,7 @@ export const ContactOrganizerDialog: React.FC<ContactOrganizerDialogProps> = ({
           {language === 'sv' ? 'Kontakta arrangör' : 'Contact Organizer'}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>
             {language === 'sv' ? 'Kontakta arrangören' : 'Contact the Organizer'}
@@ -313,32 +313,36 @@ export const ContactOrganizerDialog: React.FC<ContactOrganizerDialogProps> = ({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{language === 'sv' ? 'Ditt namn' : 'Your name'}</FormLabel>
-                  <FormControl>
-                    <Input placeholder={language === 'sv' ? 'Namn' : 'Name'} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{language === 'sv' ? 'Din e-post' : 'Your email'}</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="email@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Name and Email in a row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{language === 'sv' ? 'Ditt namn' : 'Your name'}</FormLabel>
+                    <FormControl>
+                      <Input placeholder={language === 'sv' ? 'Namn' : 'Name'} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{language === 'sv' ? 'Din e-post' : 'Your email'}</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="email@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
               control={form.control}
               name="message"
@@ -348,7 +352,7 @@ export const ContactOrganizerDialog: React.FC<ContactOrganizerDialogProps> = ({
                   <FormControl>
                     <Textarea 
                       placeholder={language === 'sv' ? 'Skriv ditt meddelande här...' : 'Write your message here...'}
-                      rows={4}
+                      rows={3}
                       {...field} 
                     />
                   </FormControl>
@@ -357,33 +361,30 @@ export const ContactOrganizerDialog: React.FC<ContactOrganizerDialogProps> = ({
               )}
             />
 
-            {/* CAPTCHA Widget */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Shield className="w-4 h-4" />
-                <span>
-                  {language === 'sv'
-                    ? 'Vänligen verifiera att du inte är en robot'
-                    : 'Please verify you are not a robot'}
-                </span>
+            {/* CAPTCHA and Submit in a row */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Shield className="w-3 h-3" />
+                  <span>
+                    {language === 'sv' ? 'Verifiera' : 'Verify'}
+                  </span>
+                  {captchaToken && (
+                    <span className="text-green-600 ml-1">✓</span>
+                  )}
+                </div>
+                <div id="organizer-turnstile-container" className="[&_iframe]:!h-[50px] [&_iframe]:!w-[150px]" style={{ transform: 'scale(0.85)', transformOrigin: 'left' }} />
+                {captchaError && (
+                  <p className="text-xs text-destructive">{captchaError}</p>
+                )}
               </div>
-              <div id="organizer-turnstile-container" className="min-h-[65px]" />
-              {captchaError && (
-                <p className="text-sm text-destructive">{captchaError}</p>
-              )}
-              {captchaToken && (
-                <p className="text-sm text-green-600">
-                  {language === 'sv' ? '✓ Verifierad' : '✓ Verified'}
-                </p>
-              )}
+              <Button type="submit" className="gap-2 sm:min-w-[140px]" disabled={isSubmitting || !captchaToken}>
+                <Send className="w-4 h-4" />
+                {isSubmitting 
+                  ? (language === 'sv' ? 'Skickar...' : 'Sending...') 
+                  : (language === 'sv' ? 'Skicka' : 'Send')}
+              </Button>
             </div>
-
-            <Button type="submit" className="w-full gap-2" disabled={isSubmitting || !captchaToken}>
-              <Send className="w-4 h-4" />
-              {isSubmitting 
-                ? (language === 'sv' ? 'Skickar...' : 'Sending...') 
-                : (language === 'sv' ? 'Skicka meddelande' : 'Send Message')}
-            </Button>
           </form>
         </Form>
       </DialogContent>
