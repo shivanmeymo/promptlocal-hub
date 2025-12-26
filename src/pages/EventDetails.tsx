@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Layout } from '@/components/layout/Layout';
 import { AddToCalendar } from '@/components/events/AddToCalendar';
 import { ContactOrganizerDialog } from '@/components/events/ContactOrganizerDialog';
+import { GoogleMapWrapper } from '@/components/maps/GoogleMap';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -322,6 +323,22 @@ const EventDetails: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Location Map */}
+            {!event.is_online && (
+              <Card>
+                <CardContent className="pt-6">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <MapPin className="w-5 h-5" />
+                    {language === 'sv' ? 'Karta' : 'Map'}
+                  </h3>
+                  <GoogleMapWrapper 
+                    singleLocation={event.location} 
+                    height="250px"
+                  />
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>
