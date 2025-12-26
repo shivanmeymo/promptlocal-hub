@@ -1,6 +1,8 @@
-import React, { useMemo, useCallback } from 'react';
-import { GoogleMap as GoogleMapComponent, LoadScript, Marker, InfoWindow } from '@react-google-maps/api';
+import React, { useMemo, useCallback, useState } from 'react';
+import { GoogleMap as GoogleMapComponent, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { MapPin, ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyBKPUkBChJ6bgDQHz2cF0nPH_MYqRwBbtw';
 
@@ -54,8 +56,14 @@ export const GoogleMapWrapper: React.FC<GoogleMapProps> = ({
 }) => {
   const { language } = useLanguage();
   const [markers, setMarkers] = React.useState<Array<{ id: string; title: string; position: { lat: number; lng: number } }>>([]);
-  const [selectedMarker, setSelectedMarker] = React.useState<string | null>(null);
-  const [mapCenter, setMapCenter] = React.useState(defaultCenter);
+  const [selectedMarker, setSelectedMarker] = useState<string | null>(null);
+  const [mapCenter, setMapCenter] = useState(defaultCenter);
+  const [loadError, setLoadError] = useState(false);
+
+  const { isLoaded, loadError: apiLoadError } = useJsApiLoader({
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    id: 'google-map-script',
+  });
 
   const geocodeAddress = useCallback(async (address: string): Promise<{ lat: number; lng: number } | null> => {
     if (geocodeCache.has(address)) {
@@ -79,6 +87,12 @@ export const GoogleMapWrapper: React.FC<GoogleMapProps> = ({
     }
     return null;
   }, []);
+
+  React.useEffect(() => {
+    if (apiLoadError) {
+      setLoadError(true);
+    }
+  }, [apiLoadError]);
 
   React.useEffect(() => {
     const geocodeLocations = async () => {
@@ -123,44 +137,84 @@ export const GoogleMapWrapper: React.FC<GoogleMapProps> = ({
     }
   }, [onEventClick]);
 
-  return (
-    <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY}>
-      <GoogleMapComponent
-        mapContainerStyle={containerStyle}
-        center={mapCenter}
-        zoom={singleLocation ? 15 : zoom}
-        options={mapOptions}
+  const openInGoogleMaps = useCallback(() => {
+    const location = singleLocation || (events[0]?.location);
+    if (location) {
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`, '_blank');
+    }
+  }, [singleLocation, events]);
+
+  // Error/Loading fallback UI
+  if (loadError || apiLoadError) {
+    return (
+      <div 
+        className="rounded-xl bg-muted flex flex-col items-center justify-center gap-4 p-6"
+        style={{ height }}
       >
-        {markers.map((marker) => (
-          <Marker
-            key={marker.id}
-            position={marker.position}
-            onClick={() => handleMarkerClick(marker.id)}
-          />
-        ))}
-        
-        {selectedMarker && markers.find(m => m.id === selectedMarker) && (
-          <InfoWindow
-            position={markers.find(m => m.id === selectedMarker)!.position}
-            onCloseClick={() => setSelectedMarker(null)}
-          >
-            <div className="p-2">
-              <p className="font-medium text-sm text-foreground">
-                {markers.find(m => m.id === selectedMarker)?.title}
-              </p>
-              {selectedMarker !== 'single' && (
-                <button
-                  onClick={() => onEventClick?.(selectedMarker)}
-                  className="text-xs text-primary hover:underline mt-1"
-                >
-                  {language === 'sv' ? 'Visa event' : 'View event'}
-                </button>
-              )}
-            </div>
-          </InfoWindow>
-        )}
-      </GoogleMapComponent>
-    </LoadScript>
+        <MapPin className="w-12 h-12 text-muted-foreground" />
+        <div className="text-center">
+          <p className="font-medium text-foreground">
+            {language === 'sv' ? 'Kartan kunde inte laddas' : 'Map could not be loaded'}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {singleLocation || events[0]?.location || ''}
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={openInGoogleMaps} className="gap-2">
+          <ExternalLink className="w-4 h-4" />
+          {language === 'sv' ? 'Öppna i Google Maps' : 'Open in Google Maps'}
+        </Button>
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <div 
+        className="rounded-xl bg-muted animate-pulse flex items-center justify-center"
+        style={{ height }}
+      >
+        <MapPin className="w-8 h-8 text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <GoogleMapComponent
+      mapContainerStyle={containerStyle}
+      center={mapCenter}
+      zoom={singleLocation ? 15 : zoom}
+      options={mapOptions}
+    >
+      {markers.map((marker) => (
+        <Marker
+          key={marker.id}
+          position={marker.position}
+          onClick={() => handleMarkerClick(marker.id)}
+        />
+      ))}
+      
+      {selectedMarker && markers.find(m => m.id === selectedMarker) && (
+        <InfoWindow
+          position={markers.find(m => m.id === selectedMarker)!.position}
+          onCloseClick={() => setSelectedMarker(null)}
+        >
+          <div className="p-2">
+            <p className="font-medium text-sm text-foreground">
+              {markers.find(m => m.id === selectedMarker)?.title}
+            </p>
+            {selectedMarker !== 'single' && (
+              <button
+                onClick={() => onEventClick?.(selectedMarker)}
+                className="text-xs text-primary hover:underline mt-1"
+              >
+                {language === 'sv' ? 'Visa event' : 'View event'}
+              </button>
+            )}
+          </div>
+        </InfoWindow>
+      )}
+    </GoogleMapComponent>
   );
 };
 
