@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Upload, Sparkles, Globe, Video, Repeat, X } from 'lucide-react';
+import { Calendar, Upload, Sparkles, Globe, Video, Repeat, X, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,13 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Layout } from '@/components/layout/Layout';
 import { BackButton } from '@/components/BackButton';
+import { LocationAutocomplete } from '@/components/maps/LocationAutocomplete';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 const categories = ['music', 'sports', 'art', 'food', 'business', 'education', 'community', 'other'] as const;
-const locations = ['Uppsala', 'Stockholm', 'Göteborg', 'Malmö', 'Lund', 'Linköping', 'Örebro', 'Västerås'];
 
 const CreateEvent: React.FC = () => {
   const { t, language } = useLanguage();
@@ -30,8 +30,6 @@ const CreateEvent: React.FC = () => {
   const [aiLoading, setAiLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
-  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
 
   // Get default dates and times
   const getDefaultDates = () => {
@@ -83,24 +81,6 @@ const CreateEvent: React.FC = () => {
       navigate('/auth');
     }
   }, [user, navigate]);
-
-  const handleLocationInput = (value: string) => {
-    setFormData({ ...formData, location: value });
-    if (value.length > 1) {
-      const filtered = locations.filter(loc => 
-        loc.toLowerCase().includes(value.toLowerCase())
-      );
-      setLocationSuggestions(filtered);
-      setShowLocationSuggestions(filtered.length > 0);
-    } else {
-      setShowLocationSuggestions(false);
-    }
-  };
-
-  const selectLocation = (loc: string) => {
-    setFormData({ ...formData, location: loc });
-    setShowLocationSuggestions(false);
-  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -561,39 +541,25 @@ const CreateEvent: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="relative">
+                <div>
                   <Label htmlFor="location">
                     {t('create.location')} <span className="text-destructive">*</span>
                   </Label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  {formData.isOnline ? (
                     <Input
                       id="location"
                       value={formData.location}
-                      onChange={(e) => handleLocationInput(e.target.value)}
-                      onFocus={() => formData.location.length > 1 && setShowLocationSuggestions(locationSuggestions.length > 0)}
-                      onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 200)}
-                      className="pl-10"
-                      placeholder={formData.isOnline 
-                        ? (language === 'sv' ? 'Länk eller plattform' : 'Link or platform')
-                        : (language === 'sv' ? 'Eventplats' : 'Event location')}
+                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      placeholder={language === 'sv' ? 'Länk eller plattform' : 'Link or platform'}
                       required
                     />
-                    {showLocationSuggestions && (
-                      <div className="absolute z-10 w-full bg-popover border rounded-md shadow-lg mt-1">
-                        {locationSuggestions.map((loc) => (
-                          <button
-                            key={loc}
-                            type="button"
-                            className="w-full text-left px-4 py-2 hover:bg-muted transition-colors"
-                            onClick={() => selectLocation(loc)}
-                          >
-                            {loc}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  ) : (
+                    <LocationAutocomplete
+                      value={formData.location}
+                      onChange={(value) => setFormData({ ...formData, location: value })}
+                      placeholder={language === 'sv' ? 'Sök efter plats...' : 'Search for location...'}
+                    />
+                  )}
                 </div>
 
                 <div>
