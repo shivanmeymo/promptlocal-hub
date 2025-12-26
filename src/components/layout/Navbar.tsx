@@ -106,10 +106,12 @@ export const Navbar: React.FC = () => {
         <div className="hidden md:flex items-center gap-6">
           <button
             onClick={toggleLanguage}
-            className="p-1 rounded hover:bg-muted transition-colors"
+            className="p-1 rounded hover:bg-muted transition-all duration-300 hover:scale-110"
             aria-label={`Switch to ${language === 'en' ? 'Swedish' : 'English'}`}
           >
-            {language === 'sv' ? <UKFlag /> : <SwedishFlag />}
+            <span className="block transition-all duration-300 ease-in-out" style={{ transform: language === 'sv' ? 'rotateY(0deg)' : 'rotateY(180deg)' }}>
+              {language === 'sv' ? <UKFlag /> : <SwedishFlag />}
+            </span>
           </button>
 
           <Link to="/create-event">
@@ -200,10 +202,12 @@ export const Navbar: React.FC = () => {
         <div className="md:hidden flex items-center gap-2">
           <button
             onClick={toggleLanguage}
-            className="p-1 rounded hover:bg-muted transition-colors"
+            className="p-1 rounded hover:bg-muted transition-all duration-300 hover:scale-110"
             aria-label={`Switch to ${language === 'en' ? 'Swedish' : 'English'}`}
           >
-            {language === 'sv' ? <UKFlag /> : <SwedishFlag />}
+            <span className="block transition-all duration-300 ease-in-out" style={{ transform: language === 'sv' ? 'rotateY(0deg)' : 'rotateY(180deg)' }}>
+              {language === 'sv' ? <UKFlag /> : <SwedishFlag />}
+            </span>
           </button>
 
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
