@@ -109,7 +109,7 @@ export const Navbar: React.FC = () => {
             className="p-1 rounded hover:bg-muted transition-colors"
             aria-label={`Switch to ${language === 'en' ? 'Swedish' : 'English'}`}
           >
-            {language === 'sv' ? <SwedishFlag /> : <UKFlag />}
+            {language === 'sv' ? <UKFlag /> : <SwedishFlag />}
           </button>
 
           <Link to="/create-event">
@@ -203,7 +203,7 @@ export const Navbar: React.FC = () => {
             className="p-1 rounded hover:bg-muted transition-colors"
             aria-label={`Switch to ${language === 'en' ? 'Swedish' : 'English'}`}
           >
-            {language === 'sv' ? <SwedishFlag /> : <UKFlag />}
+            {language === 'sv' ? <UKFlag /> : <SwedishFlag />}
           </button>
 
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
