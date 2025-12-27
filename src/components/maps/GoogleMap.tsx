@@ -23,8 +23,6 @@ interface GoogleMapProps {
 }
 
 const defaultCenter = { lat: 59.8586, lng: 17.6389 }; // Uppsala, Sweden
-const SINGLE_LOCATION_ZOOM = 17; // Close-up view for individual addresses
-const MULTI_LOCATION_ZOOM = 12; // Overview for multiple events
 
 const mapContainerStyle = {
   width: '100%',
@@ -181,13 +179,11 @@ export const GoogleMapWrapper: React.FC<GoogleMapProps> = ({
     );
   }
 
-  const currentZoom = singleLocation ? SINGLE_LOCATION_ZOOM : (markers.length === 1 ? SINGLE_LOCATION_ZOOM : zoom);
-
   return (
     <GoogleMapComponent
       mapContainerStyle={containerStyle}
       center={mapCenter}
-      zoom={currentZoom}
+      zoom={singleLocation ? 15 : zoom}
       options={mapOptions}
     >
       {markers.map((marker) => (
@@ -195,10 +191,6 @@ export const GoogleMapWrapper: React.FC<GoogleMapProps> = ({
           key={marker.id}
           position={marker.position}
           onClick={() => handleMarkerClick(marker.id)}
-          icon={{
-            url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
-            scaledSize: new google.maps.Size(40, 40),
-          }}
         />
       ))}
       
