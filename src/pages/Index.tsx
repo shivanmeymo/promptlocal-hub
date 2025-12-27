@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
-import { ArrowDown, Map } from 'lucide-react';
+import { ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Layout } from '@/components/layout/Layout';
 import { EventCard } from '@/components/events/EventCard';
 import { EventFilters } from '@/components/events/EventFilters';
-import { GoogleMapWrapper } from '@/components/maps/GoogleMap';
+
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -61,7 +61,7 @@ const Index: React.FC = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showMap, setShowMap] = useState(false);
+  
   const [filters, setFilters] = useState<Filters>({
     search: '',
     date: '',
@@ -191,19 +191,6 @@ const Index: React.FC = () => {
     }
   }, []);
 
-  const handleEventClick = useCallback((eventId: string) => {
-    navigate(`/event/${eventId}`);
-  }, [navigate]);
-
-  const mapEvents = useMemo(() => 
-    filteredEvents.map(e => ({
-      id: e.id,
-      title: e.title,
-      location: e.location,
-      start_date: e.start_date,
-      category: e.category,
-    })), 
-  [filteredEvents]);
 
   return (
     <Layout>
@@ -282,37 +269,12 @@ const Index: React.FC = () => {
           aria-label={language === 'sv' ? 'Lista över evenemang' : 'Events listing'}
           className="container mx-auto px-4 py-12"
         >
-          <header className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h2 className="font-display text-3xl font-bold">{t('events.upcoming')}</h2>
-              <p className="text-muted-foreground" aria-live="polite">
-                {filteredEvents.length} {t('events.found')}
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => setShowMap(!showMap)}
-              className="gap-2"
-            >
-              <Map className="w-4 h-4" />
-              {showMap 
-                ? (language === 'sv' ? 'Dölj karta' : 'Hide map')
-                : (language === 'sv' ? 'Visa karta' : 'Show map')
-              }
-            </Button>
+          <header className="mb-8">
+            <h2 className="font-display text-3xl font-bold">{t('events.upcoming')}</h2>
+            <p className="text-muted-foreground" aria-live="polite">
+              {filteredEvents.length} {t('events.found')}
+            </p>
           </header>
-
-          {/* Events Map */}
-          {showMap && filteredEvents.length > 0 && (
-            <div className="mb-8">
-              <GoogleMapWrapper 
-                events={mapEvents}
-                height="400px"
-                zoom={10}
-                onEventClick={handleEventClick}
-              />
-            </div>
-          )}
 
           {loading ? (
             <div 
