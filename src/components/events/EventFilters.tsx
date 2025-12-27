@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Calendar, MapPin, Bell, X } from 'lucide-react';
+import { Search, Calendar, Bell, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { LocationAutocomplete } from '@/components/maps/LocationAutocomplete';
 
 interface EventFiltersProps {
   onSearchChange: (value: string) => void;
@@ -21,7 +22,6 @@ interface EventFiltersProps {
   onKeywordsChange?: (keywords: string[]) => void;
 }
 
-const locations = ['Uppsala', 'Stockholm', 'Göteborg', 'Malmö', 'Lund', 'Linköping'];
 const categories = ['music', 'sports', 'art', 'food', 'business', 'education', 'community', 'other'];
 
 export const EventFilters: React.FC<EventFiltersProps> = ({
@@ -83,11 +83,6 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
   const handleDateChange = (value: string) => {
     setSelectedFilters(f => ({ ...f, date: value }));
     onDateChange(value === 'all' ? '' : value);
-  };
-
-  const handleLocationChange = (value: string) => {
-    setSelectedFilters(f => ({ ...f, location: value }));
-    onLocationChange(value === 'all' ? '' : value);
   };
 
   const handleCategoryChange = (value: string) => {
@@ -221,23 +216,17 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
 
         {/* Location */}
         <div>
-          <Label className="flex items-center gap-2 mb-2">
-            <MapPin className="w-4 h-4" />
+          <Label className="mb-2 block">
             {t('search.location')}
           </Label>
-          <Select onValueChange={handleLocationChange} value={selectedFilters.location || 'all'}>
-            <SelectTrigger>
-              <SelectValue placeholder={t('search.select')} />
-            </SelectTrigger>
-            <SelectContent className="bg-popover">
-              <SelectItem value="all">{language === 'sv' ? 'Alla platser' : 'All locations'}</SelectItem>
-              {locations.map((loc) => (
-                <SelectItem key={loc} value={loc.toLowerCase()}>
-                  {loc}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <LocationAutocomplete
+            value={selectedFilters.location}
+            onChange={(value) => {
+              setSelectedFilters(f => ({ ...f, location: value }));
+              onLocationChange(value);
+            }}
+            placeholder={language === 'sv' ? 'Sök efter plats...' : 'Search for location...'}
+          />
         </div>
 
         {/* Category */}

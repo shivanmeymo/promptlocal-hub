@@ -4,7 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { MapPin, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const GOOGLE_MAPS_API_KEY = 'AIzaSyBKPUkBChJ6bgDQHz2cF0nPH_MYqRwBbtw';
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
 interface MapEvent {
   id: string;
