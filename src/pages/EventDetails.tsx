@@ -10,7 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Layout } from '@/components/layout/Layout';
 import { AddToCalendar } from '@/components/events/AddToCalendar';
 import { ContactOrganizerDialog } from '@/components/events/ContactOrganizerDialog';
-import { GoogleMapWrapper } from '@/components/maps/GoogleMap';
+import { ExternalLink } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -319,26 +319,22 @@ const EventDetails: React.FC = () => {
                   <p className="text-sm text-muted-foreground">
                     {language === 'sv' ? 'Plats' : 'Location'}
                   </p>
-                  <p className="font-medium">{event.location}</p>
+                  {!event.is_online ? (
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      {event.location}
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  ) : (
+                    <p className="font-medium">{event.location}</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
-
-            {/* Location Map */}
-            {!event.is_online && (
-              <Card>
-                <CardContent className="pt-6">
-                  <h3 className="font-semibold mb-4 flex items-center gap-2">
-                    <MapPin className="w-5 h-5" />
-                    {language === 'sv' ? 'Karta' : 'Map'}
-                  </h3>
-                  <GoogleMapWrapper 
-                    singleLocation={event.location} 
-                    height="250px"
-                  />
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
       </div>
