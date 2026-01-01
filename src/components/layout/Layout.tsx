@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
+import CookieConsent from '@/components/CookieConsent';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface LayoutProps {
@@ -20,6 +21,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         {children}
       </main>
       <Footer />
+      {/* Cookie consent banner */}
+      <CookieConsent />
     </div>
   );
 };

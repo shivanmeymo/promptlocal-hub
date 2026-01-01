@@ -313,7 +313,19 @@ const Auth: React.FC = () => {
 
         <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
           <Card className="w-full max-w-md">
-            <CardHeader className="text-center">
+            <CardHeader className="text-center relative">
+               <Button
+                 type="button"
+                 variant="ghost"
+                 className="absolute left-2 top-2 h-8 px-2"
+                 onClick={() => {
+                   navigate('/');
+                 }}
+                 aria-label={language === 'sv' ? 'Tillbaka' : 'Back'}
+               >
+                 <ArrowLeft className="w-4 h-4 mr-1" />
+                 {language === 'sv' ? 'Tillbaka' : 'Back'}
+               </Button>
               <Link to="/" className="flex items-center justify-center gap-2 mb-4">
                 <span className="text-3xl">✨</span>
                 <span className="font-display font-bold text-2xl">
@@ -372,7 +384,19 @@ const Auth: React.FC = () => {
 
       <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
         <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
+          <CardHeader className="text-center relative">
+            <Button
+              type="button"
+              variant="ghost"
+              className="absolute left-2 top-2 h-8 px-2"
+              onClick={() => {
+                navigate('/');
+              }}
+              aria-label={language === 'sv' ? 'Tillbaka' : 'Back'}
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              {language === 'sv' ? 'Tillbaka' : 'Back'}
+            </Button>
             <Link to="/" className="flex items-center justify-center gap-2 mb-4">
               <span className="text-3xl">✨</span>
               <span className="font-display font-bold text-2xl">
