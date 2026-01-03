@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Check, X, Clock, Eye, MessageSquare, Calendar, MapPin, User, Mail, DollarSign, Tag, ExternalLink, Image as ImageIcon } from 'lucide-react';
+import { Shield, Check, X, Clock, Eye, MessageSquare, Calendar, MapPin, User, Mail, DollarSign, Tag, ExternalLink, Image as ImageIcon, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -63,6 +63,13 @@ const AdminDashboard: React.FC = () => {
 
   const checkAdminRole = async () => {
     if (!user) return;
+
+    // Allow explicit access for Shivan by email
+    if (user.email && user.email.toLowerCase() === 'shivan.meymo@gmail.com') {
+      setIsAdmin(true);
+      fetchEvents();
+      return;
+    }
     
     const { data, error } = await supabase
       .from('user_roles')
@@ -449,7 +456,7 @@ const AdminDashboard: React.FC = () => {
                               </div>
 
                               {/* Action Buttons */}
-                              <div className="flex lg:flex-col gap-2 lg:min-w-[120px]">
+                              <div className="flex lg:flex-col gap-2 lg:min-w-[140px]">
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -458,6 +465,15 @@ const AdminDashboard: React.FC = () => {
                                 >
                                   <Eye className="w-4 h-4 mr-1" />
                                   {language === 'sv' ? 'Visa' : 'View'}
+                                </Button>
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => navigate(`/edit-event/${event.id}`)}
+                                  className="flex-1 lg:flex-none"
+                                >
+                                  <Edit2 className="w-4 h-4 mr-1" />
+                                  {language === 'sv' ? 'Redigera' : 'Edit'}
                                 </Button>
                                 {event.status === 'pending' && (
                                   <>

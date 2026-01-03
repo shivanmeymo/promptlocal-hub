@@ -17,6 +17,7 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import ManageEvents from "./pages/ManageEvents";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminEvents from "./pages/AdminEvents";
 import EventDetails from "./pages/EventDetails";
 import EditEvent from "./pages/EditEvent";
 import DataIntegrity from "./pages/DataIntegrity";
@@ -26,6 +27,7 @@ import Unsubscribe from "./pages/Unsubscribe";
 import ResetPassword from "./pages/ResetPassword";
 import ApprovalResult from "./pages/ApprovalResult";
 import NotFound from "./pages/NotFound";
+import DebugSupabase from "./pages/DebugSupabase";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +52,8 @@ const App = () => (
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/manage-events" element={<ManageEvents />} />
                 <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/shivan" element={<AdminDashboard />} />
+                <Route path="/admin/events" element={<AdminEvents />} />
                 <Route path="/event/:id" element={<EventDetails />} />
                 
                 <Route path="/edit-event/:id" element={<EditEvent />} />
@@ -58,6 +62,7 @@ const App = () => (
                 <Route path="/unsubscribe" element={<Unsubscribe />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/approval-result" element={<ApprovalResult />} />
+                <Route path="/debug/supabase" element={<DebugSupabase />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

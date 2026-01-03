@@ -63,6 +63,7 @@ export const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const isShivan = user?.email?.toLowerCase() === 'shivan.meymo@gmail.com';
 
   useEffect(() => {
     if (!user) {
@@ -76,7 +77,7 @@ export const Navbar: React.FC = () => {
       .eq('user_id', user.id)
       .eq('role', 'admin')
       .maybeSingle()
-      .then(({ data }) => setIsAdmin(!!data));
+      .then(({ data }) => setIsAdmin(!!data || isShivan));
   }, [user]);
 
   const handleSignOut = useCallback(async () => {
