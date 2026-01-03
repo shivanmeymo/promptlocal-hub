@@ -10,34 +10,10 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
-      ai_usage: {
-        Row: {
-          created_at: string
-          id: string
-          usage_count: number
-          usage_date: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          usage_count?: number
-          usage_date?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          usage_count?: number
-          usage_date?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       contact_messages: {
         Row: {
           category: string | null
@@ -98,7 +74,6 @@ export type Database = {
       events: {
         Row: {
           admin_notes: string | null
-          approval_token: string | null
           approved_at: string | null
           approved_by: string | null
           category: Database["public"]["Enums"]["event_category"]
@@ -123,16 +98,14 @@ export type Database = {
           start_time: string
           status: Database["public"]["Enums"]["event_status"]
           title: string
-          token_created_at: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           admin_notes?: string | null
-          approval_token?: string | null
           approved_at?: string | null
           approved_by?: string | null
-          category: Database["public"]["Enums"]["event_category"]
+          category?: Database["public"]["Enums"]["event_category"]
           created_at?: string
           description: string
           end_date: string
@@ -154,13 +127,11 @@ export type Database = {
           start_time: string
           status?: Database["public"]["Enums"]["event_status"]
           title: string
-          token_created_at?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           admin_notes?: string | null
-          approval_token?: string | null
           approved_at?: string | null
           approved_by?: string | null
           category?: Database["public"]["Enums"]["event_category"]
@@ -185,78 +156,8 @@ export type Database = {
           start_time?: string
           status?: Database["public"]["Enums"]["event_status"]
           title?: string
-          token_created_at?: string | null
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      events_public: {
-        Row: {
-          approved_at: string | null
-          category: Database["public"]["Enums"]["event_category"]
-          created_at: string
-          description: string
-          end_date: string
-          end_time: string
-          id: string
-          image_url: string | null
-          is_free: boolean
-          location: string
-          organizer_description: string | null
-          organizer_name: string
-          organizer_website: string | null
-          other_category: string | null
-          price: number | null
-          start_date: string
-          start_time: string
-          status: Database["public"]["Enums"]["event_status"]
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          approved_at?: string | null
-          category: Database["public"]["Enums"]["event_category"]
-          created_at?: string
-          description: string
-          end_date: string
-          end_time: string
-          id: string
-          image_url?: string | null
-          is_free?: boolean
-          location: string
-          organizer_description?: string | null
-          organizer_name: string
-          organizer_website?: string | null
-          other_category?: string | null
-          price?: number | null
-          start_date: string
-          start_time: string
-          status: Database["public"]["Enums"]["event_status"]
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          approved_at?: string | null
-          category?: Database["public"]["Enums"]["event_category"]
-          created_at?: string
-          description?: string
-          end_date?: string
-          end_time?: string
-          id?: string
-          image_url?: string | null
-          is_free?: boolean
-          location?: string
-          organizer_description?: string | null
-          organizer_name?: string
-          organizer_website?: string | null
-          other_category?: string | null
-          price?: number | null
-          start_date?: string
-          start_time?: string
-          status?: Database["public"]["Enums"]["event_status"]
-          title?: string
-          updated_at?: string
         }
         Relationships: []
       }
@@ -313,110 +214,24 @@ export type Database = {
       }
     }
     Views: {
-      public_events: {
-        Row: {
-          approved_at: string | null
-          category: Database["public"]["Enums"]["event_category"] | null
-          created_at: string | null
-          description: string | null
-          end_date: string | null
-          end_time: string | null
-          id: string | null
-          image_url: string | null
-          is_free: boolean | null
-          is_online: boolean | null
-          is_recurring: boolean | null
-          location: string | null
-          organizer_description: string | null
-          organizer_name: string | null
-          organizer_website: string | null
-          other_category: string | null
-          price: number | null
-          recurring_pattern: string | null
-          start_date: string | null
-          start_time: string | null
-          status: Database["public"]["Enums"]["event_status"] | null
-          title: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          approved_at?: string | null
-          category?: Database["public"]["Enums"]["event_category"] | null
-          created_at?: string | null
-          description?: string | null
-          end_date?: string | null
-          end_time?: string | null
-          id?: string | null
-          image_url?: string | null
-          is_free?: boolean | null
-          is_online?: boolean | null
-          is_recurring?: boolean | null
-          location?: string | null
-          organizer_description?: string | null
-          organizer_name?: string | null
-          organizer_website?: string | null
-          other_category?: string | null
-          price?: number | null
-          recurring_pattern?: string | null
-          start_date?: string | null
-          start_time?: string | null
-          status?: Database["public"]["Enums"]["event_status"] | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          approved_at?: string | null
-          category?: Database["public"]["Enums"]["event_category"] | null
-          created_at?: string | null
-          description?: string | null
-          end_date?: string | null
-          end_time?: string | null
-          id?: string | null
-          image_url?: string | null
-          is_free?: boolean | null
-          is_online?: boolean | null
-          is_recurring?: boolean | null
-          location?: string | null
-          organizer_description?: string | null
-          organizer_name?: string | null
-          organizer_website?: string | null
-          other_category?: string | null
-          price?: number | null
-          recurring_pattern?: string | null
-          start_date?: string | null
-          start_time?: string | null
-          status?: Database["public"]["Enums"]["event_status"] | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
-      increment_ai_usage: {
-        Args: { p_date: string; p_max_limit?: number; p_user_id: string }
-        Returns: Json
-      }
+      is_admin: { Args: { uid?: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
+      app_role: "user" | "moderator" | "admin"
       event_category:
         | "music"
         | "sports"
+        | "tech"
         | "art"
-        | "food"
-        | "business"
-        | "education"
         | "community"
+        | "education"
+        | "business"
+        | "health"
         | "other"
-      event_status: "pending" | "approved" | "rejected"
+      event_status: "pending" | "approved" | "rejected" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -544,18 +359,19 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user"],
+      app_role: ["user", "moderator", "admin"],
       event_category: [
         "music",
         "sports",
+        "tech",
         "art",
-        "food",
-        "business",
-        "education",
         "community",
+        "education",
+        "business",
+        "health",
         "other",
       ],
-      event_status: ["pending", "approved", "rejected"],
+      event_status: ["pending", "approved", "rejected", "cancelled"],
     },
   },
 } as const
