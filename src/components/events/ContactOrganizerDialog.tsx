@@ -27,7 +27,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 
 // Cloudflare Turnstile site key (public)
-const TURNSTILE_SITE_KEY = "0x4AAAAAACH5AgxC_kb_RAge";
+const TURNSTILE_SITE_KEY = "0x4AAAAAACKgQEPVM6HOoY9T";
 
 declare global {
   interface Window {
