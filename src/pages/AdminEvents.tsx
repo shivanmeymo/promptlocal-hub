@@ -4,50 +4,57 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
-import { listMyEvents, createEvent, assignRole, listEventRoles } from '@/integrations/supabase/events';
+import { supabase } from '@/integrations/supabase/client';
+import type { Tables } from '@/integrations/supabase/types';
+
+type Event = Tables<'events'>;
 
 const AdminEvents: React.FC = () => {
   const { user } = useAuth();
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [startsAt, setStartsAt] = useState('');
-  const [newRoleUserId, setNewRoleUserId] = useState('');
-  const [selectedEventId, setSelectedEventId] = useState<string>('');
-  const [roles, setRoles] = useState<any[]>([]);
 
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const ev = await listMyEvents(user.id);
-      setEvents(ev);
-      if (ev.length) {
-        setSelectedEventId(ev[0].id);
-        const rs = await listEventRoles(ev[0].id);
-        setRoles(rs);
-      }
+      const { data } = await supabase
+        .from('events')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('start_date', { ascending: true });
+      setEvents(data || []);
     })();
   }, [user]);
 
   const onCreate = async () => {
     if (!user || !title || !startsAt) return;
-    const ev = await createEvent({ owner_id: user.id, title, description, starts_at: new Date(startsAt).toISOString(), visibility: 'public', status: 'published' });
-    setEvents([ev, ...events]);
-    setTitle(''); setDescription(''); setStartsAt('');
-  };
-
-  const onAssignRole = async () => {
-    if (!selectedEventId || !newRoleUserId) return;
-    await assignRole(selectedEventId, newRoleUserId, 'attendee');
-    const rs = await listEventRoles(selectedEventId);
-    setRoles(rs);
-    setNewRoleUserId('');
-  };
-
-  const loadRoles = async (eventId: string) => {
-    setSelectedEventId(eventId);
-    const rs = await listEventRoles(eventId);
-    setRoles(rs);
+    const startDate = new Date(startsAt);
+    const { data: newEvent, error } = await supabase
+      .from('events')
+      .insert({
+        user_id: user.id,
+        title,
+        description,
+        start_date: startDate.toISOString().split('T')[0],
+        start_time: startDate.toTimeString().slice(0, 5),
+        end_date: startDate.toISOString().split('T')[0],
+        end_time: '23:59',
+        location: 'TBD',
+        organizer_name: user.email || 'Unknown',
+        organizer_email: user.email || '',
+        status: 'pending',
+      })
+      .select()
+      .single();
+    
+    if (!error && newEvent) {
+      setEvents([newEvent, ...events]);
+    }
+    setTitle('');
+    setDescription('');
+    setStartsAt('');
   };
 
   return (
@@ -69,22 +76,11 @@ const AdminEvents: React.FC = () => {
         <ul className="list-disc pl-5 text-sm">
           {events.map(ev => (
             <li key={ev.id} className="flex items-center gap-2">
-              <button className="text-accent underline" onClick={() => loadRoles(ev.id)}>{ev.title}</button>
-              <span className="text-muted-foreground">({new Date(ev.starts_at).toLocaleString()})</span>
+              <span className="text-accent">{ev.title}</span>
+              <span className="text-muted-foreground">
+                ({new Date(`${ev.start_date}T${ev.start_time}`).toLocaleString()})
+              </span>
             </li>
-          ))}
-        </ul>
-      </Card>
-
-      <Card className="p-4 space-y-2">
-        <h2 className="font-semibold">Roles for selected event</h2>
-        <div className="flex gap-2">
-          <Input placeholder="User ID" value={newRoleUserId} onChange={e => setNewRoleUserId(e.target.value)} />
-          <Button onClick={onAssignRole} disabled={!selectedEventId || !newRoleUserId}>Add attendee</Button>
-        </div>
-        <ul className="list-disc pl-5 text-sm">
-          {roles.map(r => (
-            <li key={`${r.event_id}-${r.user_id}-${r.role}`}>{r.user_id} — {r.role}</li>
           ))}
         </ul>
       </Card>

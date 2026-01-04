@@ -18,7 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-const categories = ['music', 'sports', 'art', 'food', 'business', 'education', 'community', 'other'] as const;
+const categories = ['music', 'sports', 'art', 'tech', 'business', 'education', 'health', 'community', 'other'] as const;
 
 const CreateEvent: React.FC = () => {
   const { t, language } = useLanguage();
@@ -229,7 +229,7 @@ const CreateEvent: React.FC = () => {
         }
       }
 
-      const { data: eventData, error } = await supabase.from('events').insert({
+      const { data: eventData, error } = await supabase.from('events').insert([{
         user_id: user.id,
         organizer_name: formData.organizerName,
         organizer_email: formData.organizerEmail,
@@ -242,7 +242,7 @@ const CreateEvent: React.FC = () => {
         end_date: formData.endDate,
         end_time: formData.endTime,
         location: formData.location,
-        category: formData.category as typeof categories[number],
+        category: formData.category as 'music' | 'sports' | 'art' | 'tech' | 'business' | 'education' | 'health' | 'community' | 'other',
         other_category: formData.category === 'other' ? formData.otherCategory : null,
         is_free: formData.isFree,
         price: formData.isFree ? null : parseFloat(formData.price),
@@ -250,8 +250,8 @@ const CreateEvent: React.FC = () => {
         is_recurring: formData.isRecurring,
         recurring_pattern: formData.isRecurring ? formData.recurringPattern : null,
         image_url: imageUrl,
-        status: 'pending',
-      }).select().single();
+        status: 'pending' as const,
+      }]).select().single();
 
       if (error) throw error;
 

@@ -1,116 +1,83 @@
 import { supabase } from './client';
+import type { Tables, TablesInsert, TablesUpdate } from './types';
 
-export type EventVisibility = 'public'|'unlisted'|'private';
-export type EventStatus = 'draft'|'published'|'cancelled';
-export type EventRole = 'owner'|'host'|'editor'|'viewer'|'attendee';
-export type NotificationType = 'reminder'|'update'|'cancellation'|'custom';
-export type NotificationChannel = 'email'|'push'|'sms'|'in_app';
+export type Event = Tables<'events'>;
+export type EventInsert = TablesInsert<'events'>;
+export type EventUpdate = TablesUpdate<'events'>;
 
-// Events
+// Events - list all approved public events
 export async function listPublicEvents() {
   const { data, error } = await supabase
-    .from('events', { schema: 'app' })
+    .from('events')
     .select('*')
-    .eq('visibility', 'public')
-    .is('deleted_at', null)
-    .order('starts_at', { ascending: true });
-  if (error) throw error; return data;
+    .eq('status', 'approved')
+    .order('start_date', { ascending: true });
+  if (error) throw error;
+  return data;
 }
 
+// Events - list events owned by a specific user
 export async function listMyEvents(userId: string) {
   const { data, error } = await supabase
-    .from('events', { schema: 'app' })
+    .from('events')
     .select('*')
-    .eq('owner_id', userId)
-    .is('deleted_at', null)
-    .order('starts_at', { ascending: true });
-  if (error) throw error; return data;
+    .eq('user_id', userId)
+    .order('start_date', { ascending: true });
+  if (error) throw error;
+  return data;
 }
 
-export async function createEvent(input: {
-  owner_id: string;
-  title: string;
-  description?: string;
-  location?: string;
-  latitude?: number;
-  longitude?: number;
-  starts_at: string; // ISO
-  ends_at?: string; // ISO
-  timezone?: string;
-  visibility?: EventVisibility;
-  status?: EventStatus;
-  capacity?: number;
-  cover_url?: string;
-  tags?: string[];
-}) {
+// Create a new event
+export async function createEvent(input: EventInsert) {
   const { data, error } = await supabase
-    .from('events', { schema: 'app' })
+    .from('events')
     .insert(input)
     .select('*')
     .single();
-  if (error) throw error; return data;
+  if (error) throw error;
+  return data;
 }
 
-export async function updateEvent(id: string, patch: Partial<{ title: string; description?: string; location?: string; latitude?: number; longitude?: number; starts_at: string; ends_at?: string; timezone?: string; visibility?: EventVisibility; status?: EventStatus; capacity?: number; cover_url?: string; tags?: string[]; }>) {
+// Update an existing event
+export async function updateEvent(id: string, patch: EventUpdate) {
   const { data, error } = await supabase
-    .from('events', { schema: 'app' })
+    .from('events')
     .update(patch)
     .eq('id', id)
     .select('*')
     .single();
-  if (error) throw error; return data;
+  if (error) throw error;
+  return data;
 }
 
-export async function softDeleteEvent(id: string) {
+// Delete an event
+export async function deleteEvent(id: string) {
   const { error } = await supabase
-    .from('events', { schema: 'app' })
-    .update({ deleted_at: new Date().toISOString() })
+    .from('events')
+    .delete()
     .eq('id', id);
   if (error) throw error;
 }
 
-// Roles
-export async function assignRole(eventId: string, userId: string, role: EventRole) {
-  const { error } = await supabase
-    .from('events_public_profiles_user_roles', { schema: 'app' })
-    .insert({ event_id: eventId, user_id: userId, role });
-  if (error) throw error;
-}
+// Event Notifications
+export type EventNotification = Tables<'event_notifications'>;
 
-export async function removeRole(eventId: string, userId: string, role: EventRole) {
-  const { error } = await supabase
-    .from('events_public_profiles_user_roles', { schema: 'app' })
-    .delete()
-    .eq('event_id', eventId)
-    .eq('user_id', userId)
-    .eq('role', role);
-  if (error) throw error;
-}
-
-export async function listEventRoles(eventId: string) {
+export async function createNotification(input: TablesInsert<'event_notifications'>) {
   const { data, error } = await supabase
-    .from('events_public_profiles_user_roles', { schema: 'app' })
-    .select('*')
-    .eq('event_id', eventId)
-    .order('created_at', { ascending: true });
-  if (error) throw error; return data;
-}
-
-// Notifications
-export async function createNotification(input: { event_id: string; user_id?: string; type: NotificationType; channel: NotificationChannel; payload?: Record<string, any>; scheduled_for?: string; }) {
-  const { data, error } = await supabase
-    .from('event_notifications', { schema: 'app' })
+    .from('event_notifications')
     .insert(input)
     .select('*')
     .single();
-  if (error) throw error; return data;
+  if (error) throw error;
+  return data;
 }
 
 export async function listMyNotifications(userId: string) {
   const { data, error } = await supabase
-    .from('event_notifications', { schema: 'app' })
+    .from('event_notifications')
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
-  if (error) throw error; return data;
+  if (error) throw error;
+  return data;
 }

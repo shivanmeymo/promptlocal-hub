@@ -18,7 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-const categories = ['music', 'sports', 'art', 'food', 'business', 'education', 'community', 'other'] as const;
+const categories = ['music', 'sports', 'art', 'tech', 'business', 'education', 'health', 'community', 'other'] as const;
 
 const EditEvent: React.FC = () => {
   const { id } = useParams<{ id: string }>();
