@@ -22,7 +22,7 @@ const EventDetails = lazy(() => import("./pages/EventDetails"));
 const EditEvent = lazy(() => import("./pages/EditEvent"));
 const DataIntegrity = lazy(() => import("./pages/DataIntegrity"));
 const Terms = lazy(() => import("./pages/Terms"));
-
+const ConnectionTest = lazy(() => import("./pages/ConnectionTest"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const ApprovalResult = lazy(() => import("./pages/ApprovalResult"));
@@ -56,6 +56,7 @@ const App = () => (
                   <Route path="/edit-event/:id" element={<EditEvent />} />
                   <Route path="/data-integrity" element={<DataIntegrity />} />
                   <Route path="/terms" element={<Terms />} />
+                  <Route path="/connection-test" element={<ConnectionTest />} />
                   <Route path="/unsubscribe" element={<Unsubscribe />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/approval-result" element={<ApprovalResult />} />

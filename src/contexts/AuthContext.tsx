@@ -1,6 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User as FirebaseUser } from 'firebase/auth';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  signUpWithEmail,
+  signInWithEmail,
+  signInWithGoogle as firebaseSignInWithGoogle,
+  signOut as firebaseSignOut,
+  updatePassword as firebaseUpdatePassword,
+  deleteUserAccount as firebaseDeleteAccount,
+  onAuthStateChange,
+} from '@/integrations/firebase/auth';
+import { syncUserProfile, deleteUserProfile } from '@/integrations/supabase/auth-sync';
 
 interface Profile {
   id: string;
@@ -11,8 +21,7 @@ interface Profile {
 }
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: FirebaseUser | null;
   profile: Profile | null;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
@@ -27,8 +36,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -45,87 +53,78 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    // Listen to Firebase Auth state changes
+    const unsubscribe = onAuthStateChange(async (firebaseUser) => {
+      setUser(firebaseUser);
+      
+      if (firebaseUser) {
+        console.log('👤 Firebase user authenticated:', firebaseUser.email);
         
-        if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
+        // Sync Firebase user with Supabase profile
+        const { error: syncError } = await syncUserProfile(
+          firebaseUser.uid,
+          firebaseUser.email || '',
+          firebaseUser.displayName,
+          firebaseUser.photoURL
+        );
+        
+        if (syncError) {
+          console.error('Failed to sync user profile to Supabase:', syncError);
         }
         
-        setLoading(false);
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchProfile(session.user.id);
+        // Fetch profile from Supabase
+        await fetchProfile(firebaseUser.uid);
+      } else {
+        setProfile(null);
       }
       
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-        },
-      },
-    });
-
-    return { error: error as Error | null };
+    try {
+      // Sign up with Firebase
+      await signUpWithEmail(email, password, fullName);
+      return { error: null };
+    } catch (error) {
+      console.error('Sign up error:', error);
+      return { error: error as Error };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    return { error: error as Error | null };
+    try {
+      // Sign in with Firebase
+      await signInWithEmail(email, password);
+      return { error: null };
+    } catch (error) {
+      console.error('Sign in error:', error);
+      return { error: error as Error };
+    }
   };
 
   const signInWithGoogle = async () => {
-    // Use the current origin for the redirect URL
-    // This ensures it works correctly for both preview and production domains
-    const redirectUrl = `${window.location.origin}/auth/callback`;
-    
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: redirectUrl,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
-      },
-    });
-
-    return { error: error as Error | null };
+    try {
+      // Sign in with Google via Firebase
+      await firebaseSignInWithGoogle();
+      return { error: null };
+    } catch (error) {
+      console.error('Google sign in error:', error);
+      return { error: error as Error };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
-    setProfile(null);
+    try {
+      await firebaseSignOut();
+      setUser(null);
+      setProfile(null);
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
   };
 
   const updatePassword = async (currentPassword: string, newPassword: string) => {
@@ -133,39 +132,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return { error: new Error('No user email available') };
     }
 
-    // Verify current password first (server-side verification)
-    const { error: verifyError } = await supabase.auth.signInWithPassword({
-      email: user.email,
-      password: currentPassword,
-    });
-
-    if (verifyError) {
-      return { error: new Error('Current password is incorrect') };
+    try {
+      // Verify current password by re-authenticating
+      await signInWithEmail(user.email, currentPassword);
+      
+      // Update to new password
+      await firebaseUpdatePassword(newPassword);
+      
+      return { error: null };
+    } catch (error) {
+      console.error('Update password error:', error);
+      return { error: new Error('Current password is incorrect or failed to update') };
     }
-
-    // Now update to new password
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword,
-    });
-
-    return { error: error as Error | null };
   };
 
   const deleteAccount = async () => {
     if (!user) return { error: new Error('No user logged in') };
 
     try {
-      // Call edge function to properly delete all user data including auth.users
-      const { error } = await supabase.functions.invoke('delete-user-account');
+      // Delete user profile from Supabase first
+      await deleteUserProfile(user.uid);
       
-      if (error) {
-        console.error('Error deleting account:', error);
-        return { error: new Error('Failed to delete account') };
-      }
+      // Delete Firebase account
+      await firebaseDeleteAccount();
 
       // Clear local state
       setUser(null);
-      setSession(null);
       setProfile(null);
 
       return { error: null };
@@ -185,7 +177,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     <AuthContext.Provider
       value={{
         user,
-        session,
         profile,
         loading,
         signUp,

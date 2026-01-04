@@ -34,19 +34,19 @@ const NavLinks = memo(({ mobile, onClose, t, user }: {
   t: (key: string) => string;
   user: any;
 }) => {
-  const linkClass = `${mobile ? 'block py-2' : ''} text-foreground hover:text-primary transition-colors text-center`;
+  const linkClass = `${mobile ? 'block py-2' : ''} text-foreground hover:text-primary transition-colors text-center focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`;
   
   return (
-    <>
+    <nav aria-label={mobile ? t('nav.mobileMenu') || 'Mobile menu' : t('nav.mainMenu') || 'Main menu'}>
       {user && (
-        <Link to="/manage-events" className={linkClass} onClick={onClose}>
+        <Link to="/manage-events" className={linkClass} onClick={onClose} aria-label={t('nav.manageEvents')}>
           {t('nav.manageEvents')}
         </Link>
       )}
-      <Link to="/create-event" className={linkClass} onClick={onClose}>
+      <Link to="/create-event" className={linkClass} onClick={onClose} aria-label={t('nav.createEvent')}>
         {t('nav.createEvent')}
       </Link>
-      <Link to="/about" className={linkClass} onClick={onClose}>
+      <Link to="/about" className={linkClass} onClick={onClose} aria-label={t('nav.about')}>
         {t('nav.about')}
       </Link>
       <Link to="/contact" className={linkClass} onClick={onClose}>

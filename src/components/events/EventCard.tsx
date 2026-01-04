@@ -44,14 +44,14 @@ export const EventCard: React.FC<EventCardProps> = memo(({ event, isOwner, onEdi
   const categoryColor = getCategoryColor(event.category);
 
   const cardContent = (
-    <article className="h-full">
+    <article className="h-full" aria-labelledby={`event-title-${event.id}`}>
       <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer h-full focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2">
         <CardHeader className="p-0 relative">
           <figure className="aspect-video bg-muted relative overflow-hidden m-0">
             {event.image_url ? (
               <img
                 src={event.image_url}
-                alt=""
+                alt={`${event.title} - ${language === 'sv' ? 'Evenemangsbild' : 'Event image'}`}
                 className="w-full h-full object-cover"
                 loading="lazy"
               />
@@ -59,12 +59,12 @@ export const EventCard: React.FC<EventCardProps> = memo(({ event, isOwner, onEdi
               <div 
                 className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center"
                 role="img"
-                aria-label={language === 'sv' ? 'Standardbild för evenemang' : 'Default event image'}
+                aria-label={`${event.title} - ${language === 'sv' ? 'Standardbild för evenemang' : 'Default event image'}`}
               >
                 <span className="text-4xl" aria-hidden="true">🎉</span>
               </div>
             )}
-            <Badge className={`absolute top-3 right-3 ${categoryColor}`}>
+            <Badge className={`absolute top-3 right-3 ${categoryColor}`} aria-label={`${language === 'sv' ? 'Kategori' : 'Category'}: ${categoryLabel}`}>
               {categoryLabel}
             </Badge>
             {isOwner && (
@@ -87,7 +87,7 @@ export const EventCard: React.FC<EventCardProps> = memo(({ event, isOwner, onEdi
           </figure>
         </CardHeader>
         <CardContent className="p-4">
-          <h3 className="font-display font-semibold text-lg mb-2 line-clamp-2">
+          <h3 id={`event-title-${event.id}`} className="font-display font-semibold text-lg mb-2 line-clamp-2">
             {event.title}
           </h3>
           

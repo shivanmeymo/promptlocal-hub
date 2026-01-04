@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, User, Chrome, ArrowLeft, Shield } from 'lucide-react';
+import { Mail, Lock, User, Chrome, ArrowLeft, Shield, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -249,12 +249,29 @@ const Auth: React.FC = () => {
 
   const handleGoogleLogin = async () => {
     setLoading(true);
-    const { error } = await signInWithGoogle();
+    try {
+      console.log('Starting Google login...');
+      const { error } = await signInWithGoogle();
 
-    if (error) {
+      if (error) {
+        console.error('Google login error from hook:', error);
+        toast({
+          title: t('common.error'),
+          description: `Firebase: ${error.message}`,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: t('auth.welcome'),
+          description: 'Signed in successfully!',
+        });
+        navigate('/');
+      }
+    } catch (error: any) {
+      console.error('Caught error during Google login:', error);
       toast({
         title: t('common.error'),
-        description: error.message,
+        description: error.message || 'Failed to sign in with Google',
         variant: 'destructive',
       });
     }
@@ -265,26 +282,25 @@ const Auth: React.FC = () => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-
-    if (error) {
+    try {
+      // Use Firebase password reset instead of Supabase
+      const { sendPasswordResetEmail } = await import('@/integrations/firebase/password-reset');
+      await sendPasswordResetEmail(resetEmail);
+      
+      toast({
+        title: t('auth.passwordReset'),
+        description: t('auth.passwordResetSent'),
+      });
+      setShowForgotPassword(false);
+    } catch (error: any) {
       toast({
         title: t('common.error'),
         description: error.message,
         variant: 'destructive',
       });
-    } else {
-      toast({
-        title: t('auth.resetEmailSent'),
-        description: t('auth.checkInbox'),
-      });
-      setShowForgotPassword(false);
-      setResetEmail('');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   if (showForgotPassword) {
@@ -536,11 +552,15 @@ const Auth: React.FC = () => {
 
             <Button
               variant="outline"
-              className="w-full"
+              className="w-full h-11 shadow-sm border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all"
               onClick={handleGoogleLogin}
               disabled={loading}
             >
-              <Chrome className="w-4 h-4 mr-2" />
+              {loading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Chrome className="w-4 h-4 mr-2" />
+              )}
               {t('auth.google')}
             </Button>
           </CardContent>

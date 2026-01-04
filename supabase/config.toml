@@ -1,7 +1,7 @@
-project_id = "szmnfthiblejkjfdbeba"
+project_id = "suueubckrgtiniymoxio"
 
 [auth]
-site_url = "https://szmnfthiblejkjfdbeba.lovableproject.com"
+site_url = "https://suueubckrgtiniymoxio.supabase.co"
 
 [functions.generate-event-description]
 verify_jwt = true

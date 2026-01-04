@@ -4,6 +4,33 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Skip navigation link for WCAG accessibility */
+.skip-link {
+  @apply absolute -top-96 left-0 bg-primary text-primary-foreground px-4 py-2 z-50 transition-all;
+  @apply focus:top-4 focus:left-4;
+}
+
+/* Focus visible styles for keyboard navigation */
+*:focus-visible {
+  @apply outline-none ring-2 ring-primary ring-offset-2;
+}
+
+/* High contrast support */
+@media (prefers-contrast: high) {
+  * {
+    @apply border-current;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

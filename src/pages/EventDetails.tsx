@@ -129,8 +129,67 @@ const EventDetails: React.FC = () => {
   return (
     <Layout>
       <Helmet>
+        <html lang={language} />
         <title>{event.title} - NowInTown</title>
         <meta name="description" content={event.description.slice(0, 160)} />
+        <link rel="canonical" href={`https://nowintown.se/events/${event.id}`} />
+        
+        {/* Open Graph */}
+        <meta property="og:type" content="event" />
+        <meta property="og:title" content={event.title} />
+        <meta property="og:description" content={event.description.slice(0, 160)} />
+        <meta property="og:url" content={`https://nowintown.se/events/${event.id}`} />
+        <meta property="og:image" content={event.image_url || 'https://nowintown.se/og-image.jpg'} />
+        <meta property="og:locale" content={language === 'sv' ? 'sv_SE' : 'en_US'} />
+        <meta property="og:site_name" content="NowInTown" />
+        <meta property="event:start_time" content={`${event.start_date}T${event.start_time}`} />
+        <meta property="event:end_time" content={`${event.end_date}T${event.end_time}`} />
+        <meta property="event:location" content={event.location} />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={event.title} />
+        <meta name="twitter:description" content={event.description.slice(0, 160)} />
+        <meta name="twitter:image" content={event.image_url || 'https://nowintown.se/og-image.jpg'} />
+        
+        {/* Structured Data - Event */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Event',
+            'name': event.title,
+            'description': event.description,
+            'startDate': `${event.start_date}T${event.start_time}`,
+            'endDate': `${event.end_date}T${event.end_time}`,
+            'eventStatus': 'https://schema.org/EventScheduled',
+            'eventAttendanceMode': event.is_online ? 'https://schema.org/OnlineEventAttendanceMode' : 'https://schema.org/OfflineEventAttendanceMode',
+            'location': event.is_online ? {
+              '@type': 'VirtualLocation',
+              'url': event.organizer_website || 'https://nowintown.se'
+            } : {
+              '@type': 'Place',
+              'name': event.location,
+              'address': {
+                '@type': 'PostalAddress',
+                'addressLocality': event.location,
+                'addressCountry': 'SE'
+              }
+            },
+            'image': event.image_url || 'https://nowintown.se/og-image.jpg',
+            'organizer': {
+              '@type': 'Organization',
+              'name': event.organizer_name,
+              'url': event.organizer_website
+            },
+            'offers': {
+              '@type': 'Offer',
+              'price': event.is_free ? 0 : event.price,
+              'priceCurrency': 'SEK',
+              'availability': 'https://schema.org/InStock',
+              'url': `https://nowintown.se/events/${event.id}`
+            }
+          })}
+        </script>
       </Helmet>
 
       <div className="container mx-auto px-4 py-8">
@@ -139,65 +198,70 @@ const EventDetails: React.FC = () => {
           variant="ghost"
           onClick={() => navigate(-1)}
           className="mb-6"
+          aria-label={language === 'sv' ? 'Gå tillbaka' : 'Go back'}
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="w-4 h-4 mr-2" aria-hidden="true" />
           {language === 'sv' ? 'Tillbaka' : 'Back'}
         </Button>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <article className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Event Image */}
-            <div className="aspect-video rounded-xl overflow-hidden bg-muted">
+            <figure className="aspect-video rounded-xl overflow-hidden bg-muted">
               {event.image_url ? (
                 <img
                   src={event.image_url}
-                  alt={event.title}
+                  alt={`${event.title} - ${language === 'sv' ? 'Evenemangsbild' : 'Event image'}`}
                   className="w-full h-full object-cover"
+                  loading="lazy"
                 />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                  <span className="text-6xl">🎉</span>
+                <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center" role="img" aria-label={language === 'sv' ? 'Standard evenemangsbild' : 'Default event image'}>
+                  <span className="text-6xl" aria-hidden="true">🎉</span>
                 </div>
               )}
-            </div>
+            </figure>
 
             {/* Event Title & Category */}
-            <div>
-              <div className="flex items-center gap-3 mb-3">
-                <Badge className={categoryColor}>
+            <header>
+              <div className="flex items-center gap-3 mb-3" role="list" aria-label={language === 'sv' ? 'Evenemangsinformation' : 'Event information'}>
+                <Badge className={categoryColor} role="listitem">
                   {t(`category.${event.category}`)}
                 </Badge>
                 {event.is_online && (
-                  <Badge variant="outline">
+                  <Badge variant="outline" role="listitem">
                     {language === 'sv' ? 'Online' : 'Online'}
                   </Badge>
                 )}
                 {event.is_free ? (
-                  <Badge className="bg-success/10 text-success">
+                  <Badge className="bg-success/10 text-success" role="listitem">
                     {t('search.free')}
                   </Badge>
                 ) : (
-                  <Badge variant="secondary">{event.price} SEK</Badge>
+                  <Badge variant="secondary" role="listitem">{event.price} SEK</Badge>
                 )}
               </div>
               <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">
                 {event.title}
               </h1>
-            </div>
+            </header>
 
             {/* Event Details */}
-            <div className="flex flex-wrap gap-6 text-muted-foreground">
+            <dl className="flex flex-wrap gap-6 text-muted-foreground">
               <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-primary" />
-                <span>{startDateFormatted}</span>
+                <Calendar className="w-5 h-5 text-primary" aria-hidden="true" />
+                <dt className="sr-only">{language === 'sv' ? 'Datum' : 'Date'}</dt>
+                <dd>{startDateFormatted}</dd>
               </div>
               <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-primary" />
-                <span>{startTimeFormatted} - {endTimeFormatted}</span>
+                <Clock className="w-5 h-5 text-primary" aria-hidden="true" />
+                <dt className="sr-only">{language === 'sv' ? 'Tid' : 'Time'}</dt>
+                <dd>{startTimeFormatted} - {endTimeFormatted}</dd>
               </div>
               <div className="flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-primary" />
+                <MapPin className="w-5 h-5 text-primary" aria-hidden="true" />
+                <dt className="sr-only">{language === 'sv' ? 'Plats' : 'Location'}</dt>
                 <span>{event.location}</span>
               </div>
             </div>

@@ -227,7 +227,8 @@ const Index: React.FC = () => {
   return (
     <Layout>
       <Helmet>
-        <link rel="preload" as="image" href="https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920&q=80" fetchpriority="high" />
+        <html lang={language} />
+        <link rel="preload" as="image" href="https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920&q=80" fetchPriority="high" />
         <title>
           {language === 'sv' 
             ? 'NowInTown - Evenemang i Uppsala & Sverige | Aktiviteter & Events' 
@@ -250,20 +251,63 @@ const Index: React.FC = () => {
           }
         />
         <link rel="canonical" href="https://nowintown.se" />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://nowintown.se" />
+        <meta property="og:title" content={language === 'sv' ? 'NowInTown - Evenemang i Uppsala & Sverige' : 'NowInTown - Events in Uppsala & Sweden'} />
+        <meta property="og:description" content={language === 'sv' ? 'Hitta evenemang och aktiviteter i Uppsala och hela Sverige' : 'Find events and activities in Uppsala and across Sweden'} />
+        <meta property="og:image" content="https://nowintown.se/og-image.jpg" />
+        <meta property="og:locale" content={language === 'sv' ? 'sv_SE' : 'en_US'} />
+        <meta property="og:site_name" content="NowInTown" />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content="https://nowintown.se" />
+        <meta name="twitter:title" content={language === 'sv' ? 'NowInTown - Evenemang i Uppsala & Sverige' : 'NowInTown - Events in Uppsala & Sweden'} />
+        <meta name="twitter:description" content={language === 'sv' ? 'Hitta evenemang och aktiviteter i Uppsala och hela Sverige' : 'Find events and activities in Uppsala and across Sweden'} />
+        <meta name="twitter:image" content="https://nowintown.se/og-image.jpg" />
+        
+        {/* Additional SEO */}
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+        <meta name="googlebot" content="index, follow" />
+        <link rel="alternate" hrefLang="sv" href="https://nowintown.se?lang=sv" />
+        <link rel="alternate" hrefLang="en" href="https://nowintown.se?lang=en" />
+        <link rel="alternate" hrefLang="x-default" href="https://nowintown.se" />
+        
+        {/* Structured Data - Organization */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            'name': 'NowInTown',
+            'alternateName': 'NowInTown Events',
+            'url': 'https://nowintown.se',
+            'description': language === 'sv' ? 'Hitta evenemang och aktiviteter i Uppsala och hela Sverige' : 'Find events and activities in Uppsala and across Sweden',
+            'inLanguage': [language],
+            'potentialAction': {
+              '@type': 'SearchAction',
+              'target': {
+                '@type': 'EntryPoint',
+                'urlTemplate': 'https://nowintown.se/?search={search_term_string}'
+              },
+              'query-input': 'required name=search_term_string'
+            }
+          })}
+        </script>
       </Helmet>
 
       {/* Hero Section */}
       <main>
         <section
-          role="banner"
-          aria-label={language === 'sv' ? 'Välkommen till NowInTown' : 'Welcome to NowInTown'}
           className="relative min-h-[70vh] flex items-center justify-center bg-cover bg-center"
           style={{
             backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920&q=80')`,
           }}
+          aria-labelledby="hero-title"
         >
           <div className="container mx-auto px-4 text-center text-white">
-            <h1 className="font-display text-4xl md:text-6xl font-bold mb-6 animate-fade-in">
+            <h1 id="hero-title" className="font-display text-4xl md:text-6xl font-bold mb-6 animate-fade-in">
               {t('hero.title')}
             </h1>
             <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8 opacity-90">

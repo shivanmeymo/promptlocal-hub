@@ -161,16 +161,25 @@ const Settings: React.FC = () => {
 
     setEmailLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        email: newEmail.trim(),
-      });
+      // Firebase updateEmail requires recent authentication
+      // User should re-authenticate before changing email
+      const { updateEmail } = await import('firebase/auth');
+      const { auth } = await import('@/integrations/firebase/auth');
+      
+      if (!auth.currentUser) {
+        throw new Error('No user signed in');
+      }
 
-      if (error) throw error;
-
+      await updateEmail(auth.currentUser, newEmail.trim());
       toast.success("En bekräftelselänk har skickats till din nya e-postadress.");
       setNewEmail("");
     } catch (err: any) {
-      toast.error(err?.message || "Kunde inte uppdatera e-post.");
+      // If error is auth/requires-recent-login, prompt user to sign in again
+      if (err?.code === 'auth/requires-recent-login') {
+        toast.error("För säkerhets skull, logga in igen för att ändra din e-post.");
+      } else {
+        toast.error(err?.message || "Kunde inte uppdatera e-post.");
+      }
     } finally {
       setEmailLoading(false);
     }
@@ -179,24 +188,28 @@ const Settings: React.FC = () => {
   const handleUnlinkGoogle = async () => {
     setUnlinkLoading(true);
     try {
-      // To unlink Google, user needs to have a password set first
-      // We'll inform the user about this requirement
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const { auth } = await import('@/integrations/firebase/auth');
       
-      if (currentUser?.app_metadata?.provider === "google" && !currentUser?.email) {
-        toast.error("Du måste först lägga till en e-postadress innan du kan koppla bort Google.");
+      if (!auth.currentUser) {
+        throw new Error('No user signed in');
+      }
+
+      // Check if user has password provider or only Google
+      const providerData = auth.currentUser.providerData;
+      const hasPassword = providerData.some(p => p.providerId === 'password');
+      
+      if (!hasPassword) {
+        toast.error("Du måste först sätta ett lösenord innan du kan koppla bort Google.");
         return;
       }
 
-      // Supabase doesn't have a direct "unlink" API for OAuth providers
-      // The user would need to use password reset to set a password, then they can log in with email
-      toast.info(
-        "För att koppla bort Google, begär en lösenordsåterställning till din e-post. " +
-        "När du har satt ett lösenord kan du logga in med e-post istället.",
-        { duration: 8000 }
-      );
+      // Firebase unlink provider
+      const { unlink } = await import('firebase/auth');
+      await unlink(auth.currentUser, 'google.com');
+      
+      toast.success("Google-konto har kopplats bort.");
     } catch (err: any) {
-      toast.error("Ett fel inträffade.");
+      toast.error(err?.message || "Ett fel inträffade.");
     } finally {
       setUnlinkLoading(false);
     }

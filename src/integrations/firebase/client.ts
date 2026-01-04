@@ -1,6 +1,7 @@
 // Firebase client initialization (modular SDK)
 // Import this only where needed to avoid increasing bundle size unnecessarily.
 import { initializeApp, getApps, getApp } from 'firebase/app';
+import { checkFirebaseConfig } from '@/lib/firebase-diagnostics';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -12,9 +13,34 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
+// Run diagnostics in development
+if (import.meta.env.DEV) {
+  const isValid = checkFirebaseConfig();
+  if (!isValid) {
+    console.error('⚠️ Firebase will not work properly without complete configuration');
+  }
+}
+
+// Validate required fields
+if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
+  console.error('❌ Firebase configuration is incomplete. Required fields missing.');
+  console.error('Check that all VITE_FIREBASE_* environment variables are set in .env.local');
+  throw new Error('Firebase configuration is incomplete. Please check your environment variables.');
+}
+
 export const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-// Lazy import example for services to keep bundles smaller:
-// export const getAuthInstance = async () => (await import('firebase/auth')).getAuth(firebaseApp);
-// export const getFirestoreInstance = async () => (await import('firebase/firestore')).getFirestore(firebaseApp);
-// export const getAnalyticsInstance = async () => (await import('firebase/analytics')).getAnalytics(firebaseApp);
+// Register service worker for Firebase Cloud Messaging
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  navigator.serviceWorker
+    .register('/firebase-messaging-sw.js')
+    .then((registration) => {
+      console.log('Service Worker registered:', registration);
+    })
+    .catch((error) => {
+      console.error('Service Worker registration failed:', error);
+    });
+}
+
+// Export Firebase Auth instance
+export { firebaseApp as app };
