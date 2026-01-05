@@ -14,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Cloudflare Turnstile site key (public)
 // Note: this is safe to ship in frontend. Domain restrictions are enforced in Turnstile settings.
-const TURNSTILE_SITE_KEY = "0x4AAAAAACH5AgxC_kb_RAge";
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || "0x4AAAAAACKgQEPVM6HOoY9T";
 
 declare global {
   interface Window {
@@ -59,35 +59,19 @@ const Contact: React.FC = () => {
     { value: 'other', label: language === 'sv' ? 'Övrigt' : 'Other' },
   ];
 
-  // Load Turnstile script
+  // Load Turnstile script via centralized loader
   useEffect(() => {
-    const existing = document.getElementById('turnstile-script') as HTMLScriptElement | null;
-
-    if (existing) {
-      if (window.turnstile) {
-        setScriptLoaded(true);
-        return;
-      }
-
-      const onLoad = () => setScriptLoaded(true);
-      existing.addEventListener('load', onLoad);
-      return () => existing.removeEventListener('load', onLoad);
-    }
-
-    const script = document.createElement('script');
-    script.id = 'turnstile-script';
-    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-    script.async = true;
-    script.defer = true;
-    script.onload = () => setScriptLoaded(true);
-    script.onerror = () => {
-      setCaptchaError(
-        language === 'sv'
-          ? 'Captcha kunde inte laddas (blockerad eller felaktig nyckel).'
-          : 'Captcha failed to load (blocked or invalid key).'
-      );
-    };
-    document.head.appendChild(script);
+    import('@/lib/turnstile').then(({ loadTurnstile }) => {
+      loadTurnstile()
+        .then(() => setScriptLoaded(true))
+        .catch(() => {
+          setCaptchaError(
+            language === 'sv'
+              ? 'Captcha kunde inte laddas (blockerad eller felaktig nyckel).'
+              : 'Captcha failed to load (blocked or invalid key).'
+          );
+        });
+    });
   }, [language]);
 
   // Cleanup widget on unmount
@@ -100,17 +84,18 @@ const Contact: React.FC = () => {
   }, [captchaWidgetId]);
 
   // Render Turnstile widget
-  const renderCaptcha = useCallback(() => {
+  const renderCaptcha = useCallback(async () => {
     const container = document.getElementById('contact-turnstile-container');
-    if (!container || !window.turnstile) return;
+    const { getTurnstile } = await import('@/lib/turnstile');
+    const api = getTurnstile();
+    if (!container || !api) return;
 
     // Clear existing widget + reset token
     container.innerHTML = '';
     setCaptchaToken(null);
     setCaptchaError(null);
 
-    const widgetId = window.turnstile.render(container, {
-      sitekey: TURNSTILE_SITE_KEY,
+    const widgetId = api.render(container, {      sitekey: TURNSTILE_SITE_KEY,
       callback: (token: string) => {
         setCaptchaToken(token);
         setCaptchaError(null);
@@ -141,9 +126,11 @@ const Contact: React.FC = () => {
     let tries = 0;
     const maxTries = 60;
 
-    const tick = () => {
+    const tick = async () => {
       const container = document.getElementById('contact-turnstile-container');
-      if (container && window.turnstile) {
+      const { getTurnstile } = await import('@/lib/turnstile');
+      const api = getTurnstile();
+      if (container && api) {
         renderCaptcha();
         return;
       }

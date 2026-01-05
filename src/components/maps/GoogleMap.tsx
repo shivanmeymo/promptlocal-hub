@@ -5,6 +5,7 @@ import { MapPin, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+const GOOGLE_MAPS_CLIENT_ID = import.meta.env.VITE_GOOGLE_MAPS_CLIENT_ID || '';
 
 interface MapEvent {
   id: string;
@@ -60,10 +61,16 @@ export const GoogleMapWrapper: React.FC<GoogleMapProps> = ({
   const [mapCenter, setMapCenter] = useState(defaultCenter);
   const [loadError, setLoadError] = useState(false);
 
-  const { isLoaded, loadError: apiLoadError } = useJsApiLoader({
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+  const loaderOptions: any = {
     id: 'google-map-script',
-  });
+  };
+  if (GOOGLE_MAPS_API_KEY) {
+    loaderOptions.googleMapsApiKey = GOOGLE_MAPS_API_KEY;
+  } else if (GOOGLE_MAPS_CLIENT_ID) {
+    // @react-google-maps/api supports googleMapsClientId for Maps JS with Premium Plan
+    loaderOptions.googleMapsClientId = GOOGLE_MAPS_CLIENT_ID;
+  }
+  const { isLoaded, loadError: apiLoadError } = useJsApiLoader(loaderOptions);
 
   const geocodeAddress = useCallback(async (address: string): Promise<{ lat: number; lng: number } | null> => {
     if (geocodeCache.has(address)) {

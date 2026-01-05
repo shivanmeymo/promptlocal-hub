@@ -12,7 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Layout } from '@/components/layout/Layout';
 import { BackButton } from '@/components/BackButton';
-import { LocationAutocomplete } from '@/components/maps/LocationAutocomplete';
+import { lazy, Suspense } from 'react';
+const LazyLocationAutocomplete = lazy(() =>
+  import('@/components/maps/LocationAutocomplete').then(m => ({ default: m.LocationAutocomplete }))
+);
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -498,11 +501,13 @@ const EditEvent: React.FC = () => {
                       required
                     />
                   ) : (
-                    <LocationAutocomplete
+                    <Suspense fallback={<Input placeholder="Location" disabled />}> 
+                     <LazyLocationAutocomplete
                       value={formData.location}
                       onChange={(value) => setFormData({ ...formData, location: value })}
                       placeholder={language === 'sv' ? 'Sök efter plats...' : 'Search for location...'}
                     />
+                    </Suspense>
                   )}
                 </div>
 

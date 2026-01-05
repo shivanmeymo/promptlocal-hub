@@ -1,0 +1,29 @@
+# Dev container for Vite + React with hot reload
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Copy the rest of the source
+COPY . .
+
+# Expose the Vite dev server port
+EXPOSE 8080
+
+# Environment variables for Vite during dev (optional; can be overridden at run-time)
+ENV VITE_SUPABASE_URL="" \
+    VITE_SUPABASE_PUBLISHABLE_KEY="" \
+    VITE_GOOGLE_MAPS_API_KEY="" \
+    VITE_FIREBASE_API_KEY="" \
+    VITE_FIREBASE_AUTH_DOMAIN="" \
+    VITE_FIREBASE_PROJECT_ID="" \
+    VITE_FIREBASE_STORAGE_BUCKET="" \
+    VITE_FIREBASE_MESSAGING_SENDER_ID="" \
+    VITE_FIREBASE_APP_ID="" \
+    VITE_FIREBASE_MEASUREMENT_ID=""
+
+# Default command: run Vite dev server and bind to all interfaces
+CMD ["npm", "run", "dev", "--", "--host", "--port", "8080"]

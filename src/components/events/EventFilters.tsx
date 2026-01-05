@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense, useMemo } from 'react';
 import { Search, Calendar, Bell, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { LocationAutocomplete } from '@/components/maps/LocationAutocomplete';
+import { getCurrentPosition, reverseGeocode } from '@/lib/geo';
+const LazyLocationAutocomplete = lazy(() =>
+  import('@/components/maps/LocationAutocomplete').then(m => ({ default: m.LocationAutocomplete }))
+);
 
 interface EventFiltersProps {
   onSearchChange: (value: string) => void;
@@ -20,6 +23,8 @@ interface EventFiltersProps {
   onCategoryChange: (value: string) => void;
   onFreeOnlyChange: (value: boolean) => void;
   onKeywordsChange?: (keywords: string[]) => void;
+  onUseMyLocation?: (coords: { lat: number; lng: number }, address: string) => void;
+  onRadiusChange?: (km: number) => void;
 }
 
 const categories = ['music', 'sports', 'art', 'food', 'business', 'education', 'community', 'other'];
@@ -53,6 +58,7 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
     location: '',
     category: '',
   });
+  const [radiusKm, setRadiusKm] = useState<number>(25);
 
   const handleFreeOnlyChange = (checked: boolean) => {
     setFreeOnly(checked);
@@ -214,19 +220,28 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
           </Select>
         </div>
 
-        {/* Location */}
+        {/* Location (Swedish cities) */}
         <div>
           <Label className="mb-2 block">
-            {t('search.location')}
+            {language === 'sv' ? 'Plats' : 'Location'}
           </Label>
-          <LocationAutocomplete
-            value={selectedFilters.location}
-            onChange={(value) => {
-              setSelectedFilters(f => ({ ...f, location: value }));
-              onLocationChange(value);
+          <Select
+            onValueChange={(value) => {
+              setSelectedFilters(f => ({ ...f, location: value === 'all' ? '' : value }));
+              onLocationChange(value === 'all' ? '' : value);
             }}
-            placeholder={language === 'sv' ? 'Sök efter plats...' : 'Search for location...'}
-          />
+            value={selectedFilters.location || 'all'}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={t('search.select')} />
+            </SelectTrigger>
+            <SelectContent className="bg-popover">
+              <SelectItem value="all">{language === 'sv' ? 'Alla städer' : 'All cities'}</SelectItem>
+              {['Stockholm','Göteborg','Malmö','Umeå','Västerås','Uppsala'].map((city) => (
+                <SelectItem key={city} value={city}>{city}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Category */}

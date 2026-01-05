@@ -1,5 +1,28 @@
 # Welcome to your Lovable project
 
+## Quickstart (npm only)
+
+Local development (no Docker):
+
+- Prereqs: Node.js 18+ and npm
+- Install deps: npm install
+- Optional env (for Supabase/Maps/Firebase features): cp .env.example .env.local and fill VITE_* values
+- Start dev server: npm run dev
+- Open: http://localhost:8080
+
+Preview a production build (still no Docker):
+
+- Build: npm run build
+- Preview: npm run preview -- --host --port 8080
+- Open: http://localhost:8080
+
+Troubleshooting:
+
+- Change port: npm run dev -- --port 3000
+- Make it accessible on your network: npm run dev -- --host
+- Remember: frontend env vars must start with VITE_
+
+
 ## Project info
 
 **URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID

@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 
 // Cloudflare Turnstile site key (public)
 // Note: this is safe to ship in frontend. Domain restrictions are enforced in Turnstile settings.
-const TURNSTILE_SITE_KEY = "0x4AAAAAACH5AgxC_kb_RAge";
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || "0x4AAAAAACKgQEPVM6HOoY9T";
 
 declare global {
   interface Window {
@@ -54,38 +54,20 @@ const Auth: React.FC = () => {
   const [activeTab, setActiveTab] = useState('signin');
   const [scriptLoaded, setScriptLoaded] = useState(false);
 
-  // Load Turnstile script
+  // Load Turnstile script via centralized loader
   useEffect(() => {
-    const existing = document.getElementById('turnstile-script') as HTMLScriptElement | null;
-
-    // If the script already exists, only mark it as loaded when the Turnstile API is actually available
-    if (existing) {
-      if (window.turnstile) {
-        setScriptLoaded(true);
-        return;
-      }
-
-      const onLoad = () => setScriptLoaded(true);
-      existing.addEventListener('load', onLoad);
-      return () => existing.removeEventListener('load', onLoad);
-    }
-
-    const script = document.createElement('script');
-    script.id = 'turnstile-script';
-    // Explicit mode because we render manually via window.turnstile.render
-    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-    script.async = true;
-    script.defer = true;
-    script.onload = () => setScriptLoaded(true);
-    script.onerror = () => {
-      setCaptchaError(
-        language === 'sv'
-          ? 'Captcha kunde inte laddas (blockerad eller felaktig nyckel).'
-          : 'Captcha failed to load (blocked or invalid key).'
-      );
-    };
-    document.head.appendChild(script);
-  }, []);
+    import('@/lib/turnstile').then(({ loadTurnstile }) => {
+      loadTurnstile()
+        .then(() => setScriptLoaded(true))
+        .catch(() => {
+          setCaptchaError(
+            language === 'sv'
+              ? 'Captcha kunde inte laddas (blockerad eller felaktig nyckel).'
+              : 'Captcha failed to load (blocked or invalid key).'
+          );
+        });
+    });
+  }, [language]);
 
   // Cleanup widget on unmount / when widget changes
   useEffect(() => {
@@ -97,17 +79,18 @@ const Auth: React.FC = () => {
   }, [captchaWidgetId]);
 
   // Render Turnstile widget for signup
-  const renderCaptcha = useCallback(() => {
+  const renderCaptcha = useCallback(async () => {
     const container = document.getElementById('turnstile-container');
-    if (!container || !window.turnstile) return;
+    const { getTurnstile } = await import('@/lib/turnstile');
+    const api = getTurnstile();
+    if (!container || !api) return;
 
     // Clear existing widget + reset token
     container.innerHTML = '';
     setCaptchaToken(null);
     setCaptchaError(null);
 
-    const widgetId = window.turnstile.render(container, {
-      sitekey: TURNSTILE_SITE_KEY,
+    const widgetId = api.render(container, {      sitekey: TURNSTILE_SITE_KEY,
       callback: (token: string) => {
         setCaptchaToken(token);
         setCaptchaError(null);

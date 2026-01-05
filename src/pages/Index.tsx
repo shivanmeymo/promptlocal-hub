@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { getCurrentPosition, reverseGeocode } from '@/lib/geo';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { ArrowDown } from 'lucide-react';
@@ -61,7 +62,6 @@ const Index: React.FC = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  
   const [filters, setFilters] = useState<Filters>({
     search: '',
     date: '',
@@ -113,6 +113,27 @@ const Index: React.FC = () => {
     };
 
     fetchEvents();
+  }, []);
+
+  // On first load, ask for location and set city filter + header city
+  useEffect(() => {
+    (async () => {
+      try {
+        const coords = await getCurrentPosition();
+        const cities = ['Stockholm','Göteborg','Malmö','Umeå','Västerås','Uppsala'];
+        const { reverseGeocodeCity } = await import('@/lib/geo');
+        const matched = await reverseGeocodeCity(coords, cities);
+        if (matched) {
+          setFilters(f => ({ ...f, location: matched }));
+          try { 
+            localStorage.setItem('nit_user_city', matched);
+            window.dispatchEvent(new CustomEvent('nit_city_updated', { detail: matched }));
+          } catch {}
+        }
+      } catch {
+        // ignore if user denies
+      }
+    })();
   }, []);
 
   const filteredEvents = useMemo(() => {
@@ -178,6 +199,17 @@ const Index: React.FC = () => {
 
   const updateFilter = useCallback(<K extends keyof Filters>(key: K, value: Filters[K]) => {
     setFilters(f => ({ ...f, [key]: value }));
+    // After any filter change, scroll to show filters + upcoming events
+    // Use a timeout to allow layout to update before scrolling
+    setTimeout(() => {
+      const element = document.getElementById('filters-section');
+      if (element) {
+        const offset = 40;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - offset;
+        window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+      }
+    }, 0);
   }, []);
 
 
@@ -195,6 +227,7 @@ const Index: React.FC = () => {
   return (
     <Layout>
       <Helmet>
+        <link rel="preload" as="image" href="https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920&q=80" fetchpriority="high" />
         <title>
           {language === 'sv' 
             ? 'NowInTown - Evenemang i Uppsala & Sverige | Aktiviteter & Events' 
@@ -250,6 +283,7 @@ const Index: React.FC = () => {
 
         {/* Filters Section */}
         <section 
+          id="filters-section"
           aria-label={language === 'sv' ? 'Sök och filtrera evenemang' : 'Search and filter events'}
           className="container mx-auto px-4 -mt-8 relative z-10"
         >

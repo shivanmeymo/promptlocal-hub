@@ -27,7 +27,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 
 // Cloudflare Turnstile site key (public)
-const TURNSTILE_SITE_KEY = "0x4AAAAAACH5AgxC_kb_RAge";
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || "0x4AAAAAACKgQEPVM6HOoY9T";
 
 declare global {
   interface Window {
@@ -85,37 +85,20 @@ export const ContactOrganizerDialog: React.FC<ContactOrganizerDialogProps> = ({
     },
   });
 
-  // Load Turnstile script
+  // Load Turnstile script via centralized loader
   useEffect(() => {
     if (!open) return;
-
-    const existing = document.getElementById('turnstile-script') as HTMLScriptElement | null;
-
-    if (existing) {
-      if (window.turnstile) {
-        setScriptLoaded(true);
-        return;
-      }
-
-      const onLoad = () => setScriptLoaded(true);
-      existing.addEventListener('load', onLoad);
-      return () => existing.removeEventListener('load', onLoad);
-    }
-
-    const script = document.createElement('script');
-    script.id = 'turnstile-script';
-    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-    script.async = true;
-    script.defer = true;
-    script.onload = () => setScriptLoaded(true);
-    script.onerror = () => {
-      setCaptchaError(
-        language === 'sv'
-          ? 'Captcha kunde inte laddas.'
-          : 'Captcha failed to load.'
-      );
-    };
-    document.head.appendChild(script);
+    import('@/lib/turnstile').then(({ loadTurnstile }) => {
+      loadTurnstile()
+        .then(() => setScriptLoaded(true))
+        .catch(() => {
+          setCaptchaError(
+            language === 'sv'
+              ? 'Captcha kunde inte laddas.'
+              : 'Captcha failed to load.'
+          );
+        });
+    });
   }, [open, language]);
 
   // Cleanup widget on close/unmount
@@ -132,17 +115,18 @@ export const ContactOrganizerDialog: React.FC<ContactOrganizerDialogProps> = ({
   }, [captchaWidgetId]);
 
   // Render Turnstile widget
-  const renderCaptcha = useCallback(() => {
+  const renderCaptcha = useCallback(async () => {
     const container = document.getElementById('organizer-turnstile-container');
-    if (!container || !window.turnstile) return;
+    const { getTurnstile } = await import('@/lib/turnstile');
+    const api = getTurnstile();
+    if (!container || !api) return;
 
     // Clear existing widget + reset token
     container.innerHTML = '';
     setCaptchaToken(null);
     setCaptchaError(null);
 
-    const widgetId = window.turnstile.render(container, {
-      sitekey: TURNSTILE_SITE_KEY,
+    const widgetId = api.render(container, {      sitekey: TURNSTILE_SITE_KEY,
       callback: (token: string) => {
         setCaptchaToken(token);
         setCaptchaError(null);
@@ -173,9 +157,11 @@ export const ContactOrganizerDialog: React.FC<ContactOrganizerDialogProps> = ({
     let tries = 0;
     const maxTries = 60;
 
-    const tick = () => {
+    const tick = async () => {
       const container = document.getElementById('organizer-turnstile-container');
-      if (container && window.turnstile) {
+      const { getTurnstile } = await import('@/lib/turnstile');
+      const api = getTurnstile();
+      if (container && api) {
         renderCaptcha();
         return;
       }

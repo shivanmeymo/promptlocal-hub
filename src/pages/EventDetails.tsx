@@ -320,15 +320,17 @@ const EventDetails: React.FC = () => {
                     {language === 'sv' ? 'Plats' : 'Location'}
                   </p>
                   {!event.is_online ? (
-                    <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium text-primary hover:underline inline-flex items-center gap-1"
-                    >
-                      {event.location}
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
+                    <>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-primary hover:underline inline-flex items-center gap-1"
+                      >
+                        {event.location}
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </>
                   ) : (
                     <p className="font-medium">{event.location}</p>
                   )}

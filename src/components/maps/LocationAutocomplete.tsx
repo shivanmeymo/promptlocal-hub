@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { MapPin } from 'lucide-react';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+const GOOGLE_MAPS_CLIENT_ID = import.meta.env.VITE_GOOGLE_MAPS_CLIENT_ID || '';
 
 interface LocationAutocompleteProps {
   value: string;
@@ -32,7 +33,16 @@ const loadGoogleMapsScript = (): Promise<void> => {
     isScriptLoading = true;
 
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+    const base = 'https://maps.googleapis.com/maps/api/js';
+    const params = new URLSearchParams();
+    params.set('libraries', 'places');
+    if (GOOGLE_MAPS_API_KEY) {
+      params.set('key', GOOGLE_MAPS_API_KEY);
+    } else if (GOOGLE_MAPS_CLIENT_ID) {
+      // Fallback to client param if key is not provided
+      params.set('client', GOOGLE_MAPS_CLIENT_ID);
+    }
+    script.src = `${base}?${params.toString()}`;
     script.async = true;
     script.defer = true;
     
