@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, User, Calendar, LogOut, Shield, Settings } from 'lucide-react';
+import { Menu, User, Calendar, LogOut, Shield, Settings, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -133,11 +134,39 @@ export const Navbar: React.FC = () => {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-6">
-          {userCity && (
-            <span className="text-sm text-muted-foreground border rounded-full px-3 py-1" aria-live="polite">
-              {language === 'sv' ? 'Din stad:' : 'Your city:'} <span className="font-medium text-foreground">{userCity}</span>
-            </span>
-          )}
+          {/* City Selector */}
+          <Select
+            value={userCity || 'all'}
+            onValueChange={(value) => {
+              const newCity = value === 'all' ? null : value;
+              setUserCity(newCity);
+              if (newCity) {
+                try {
+                  localStorage.setItem('nit_user_city', newCity);
+                  window.dispatchEvent(new CustomEvent('nit_city_updated', { detail: newCity }));
+                  console.log('\ud83d\udccd Header: User selected city:', newCity);
+                } catch {}
+              } else {
+                try {
+                  localStorage.removeItem('nit_user_city');
+                  window.dispatchEvent(new CustomEvent('nit_city_updated', { detail: null }));
+                } catch {}
+              }
+            }}
+          >
+            <SelectTrigger className="w-[180px] border-foreground/20">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
+                <SelectValue placeholder={language === 'sv' ? 'V\u00e4lj stad' : 'Select city'} />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="bg-popover">
+              <SelectItem value="all">{language === 'sv' ? 'Alla st\u00e4der' : 'All cities'}</SelectItem>
+              {['Stockholm','G\u00f6teborg','Malm\u00f6','Ume\u00e5','V\u00e4ster\u00e5s','Uppsala'].map((city) => (
+                <SelectItem key={city} value={city}>{city}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <button
             onClick={toggleLanguage}
             className="p-1 rounded hover:bg-muted transition-all duration-300 hover:scale-110"
