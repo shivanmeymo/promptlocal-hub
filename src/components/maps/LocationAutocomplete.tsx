@@ -109,11 +109,13 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
 
       autocompleteRef.current.addListener('place_changed', () => {
         const place = autocompleteRef.current?.getPlace();
+        // Only update if a valid place was selected from dropdown
         if (place?.formatted_address) {
           onChange(place.formatted_address);
         } else if (place?.name) {
           onChange(place.name);
         }
+        // If no place was selected, keep the manually typed value (don't override)
       });
     } catch (error) {
       console.error('Failed to initialize autocomplete:', error);
@@ -126,7 +128,8 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     };
   }, [isLoaded, onChange]);
 
-  const handleFallbackInput = useCallback((inputValue: string) => {
+  const handleInput = useCallback((inputValue: string) => {
+    // Always update the parent value immediately when typing
     onChange(inputValue);
     
     if (!isLoaded && inputValue.length > 1) {
@@ -153,7 +156,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           ref={inputRef}
           type="text"
           value={value}
-          onChange={(e) => handleFallbackInput(e.target.value)}
+          onChange={(e) => handleInput(e.target.value)}
           onBlur={() => setTimeout(() => setShowFallback(false), 200)}
           placeholder={placeholder}
           className={`pl-10 ${className}`}
