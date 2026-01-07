@@ -25,6 +25,7 @@ interface EventFiltersProps {
   onKeywordsChange?: (keywords: string[]) => void;
   onUseMyLocation?: (coords: { lat: number; lng: number }, address: string) => void;
   onRadiusChange?: (km: number) => void;
+  initialLocation?: string;
 }
 
 const categories = ['music', 'sports', 'art', 'food', 'business', 'education', 'community', 'other'];
@@ -36,6 +37,7 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
   onCategoryChange,
   onFreeOnlyChange,
   onKeywordsChange,
+  initialLocation,
 }) => {
   const { t, language } = useLanguage();
   // Safely try to get auth context - component may be used outside AuthProvider
@@ -55,9 +57,16 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState({
     date: '',
-    location: '',
+    location: initialLocation || '',
     category: '',
   });
+
+  // Sync with external location changes
+  React.useEffect(() => {
+    if (initialLocation && initialLocation !== selectedFilters.location) {
+      setSelectedFilters(f => ({ ...f, location: initialLocation }));
+    }
+  }, [initialLocation]);
   const [radiusKm, setRadiusKm] = useState<number>(25);
 
   const handleFreeOnlyChange = (checked: boolean) => {

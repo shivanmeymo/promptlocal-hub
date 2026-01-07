@@ -123,9 +123,9 @@ export const Navbar: React.FC = () => {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-6">
-          {typeof localStorage !== 'undefined' && localStorage.getItem('nit_user_city') && (
+          {userCity && (
             <span className="text-sm text-muted-foreground border rounded-full px-3 py-1" aria-live="polite">
-              {language === 'sv' ? 'Din stad:' : 'Your city:'} <span className="font-medium text-foreground">{localStorage.getItem('nit_user_city')}</span>
+              {language === 'sv' ? 'Din stad:' : 'Your city:'} <span className="font-medium text-foreground">{userCity}</span>
             </span>
           )}
           <button

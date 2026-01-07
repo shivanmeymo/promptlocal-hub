@@ -338,6 +338,7 @@ const Index: React.FC = () => {
             onCategoryChange={(value) => updateFilter('category', value)}
             onFreeOnlyChange={(value) => updateFilter('freeOnly', value)}
             onKeywordsChange={(keywords) => updateFilter('keywords', keywords)}
+            initialLocation={filters.location}
           />
         </section>
 
