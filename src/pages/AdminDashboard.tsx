@@ -29,7 +29,7 @@ interface Event {
   category: string;
   is_free: boolean;
   price: number | null;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
   organizer_name: string;
   organizer_email: string;
   organizer_description: string | null;

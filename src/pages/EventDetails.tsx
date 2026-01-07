@@ -54,7 +54,7 @@ const EventDetails: React.FC = () => {
     if (!id) return;
     
     supabase
-      .from('events_public')
+      .from('events')
       .select('*')
       .eq('id', id)
       .maybeSingle()

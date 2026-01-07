@@ -76,7 +76,7 @@ const Index: React.FC = () => {
       setLoading(true);
       
       const [localResult, ticksterResult] = await Promise.all([
-        supabase.from('events_public').select('*').order('start_date', { ascending: true }),
+        supabase.from('events').select('*').eq('status', 'approved').order('start_date', { ascending: true }),
         supabase.functions.invoke('fetch-tickster-events', { body: { limit: 50 } }).catch(() => ({ data: null }))
       ]);
 

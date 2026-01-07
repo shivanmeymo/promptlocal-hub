@@ -14,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Cloudflare Turnstile site key (public)
 // Note: this is safe to ship in frontend. Domain restrictions are enforced in Turnstile settings.
-const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || "0x4AAAAAACKgQEPVM6HOoY9T";
+const TURNSTILE_SITE_KEY = "0x4AAAAAACKgQEPVM6HOoY9T";
 
 declare global {
   interface Window {
