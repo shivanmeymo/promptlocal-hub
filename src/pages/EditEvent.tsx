@@ -85,8 +85,18 @@ const EditEvent: React.FC = () => {
       return;
     }
 
-    // Check ownership
-    if (data.user_id !== user?.id) {
+    // Check if user is admin
+    const { data: adminData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user?.uid)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    const isAdmin = !!adminData;
+
+    // Check ownership or admin status
+    if (data.user_id !== user?.uid && !isAdmin) {
       toast({
         title: t('common.error'),
         description: language === 'sv' ? 'Du har inte behörighet att redigera detta event' : 'You do not have permission to edit this event',

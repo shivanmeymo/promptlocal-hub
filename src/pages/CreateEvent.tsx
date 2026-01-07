@@ -205,18 +205,7 @@ const CreateEvent: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) {
-      console.error('\u274c No user found when creating event');
-      toast({
-        title: language === 'sv' ? 'Inloggning kr\u00e4vs' : 'Login required',
-        description: language === 'sv' ? 'Du m\u00e5ste vara inloggad f\u00f6r att skapa event.' : 'You must be logged in to create events.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    console.log('\ud83d\udc64 Creating event with user:', { id: user.id, email: user.email });
-    
+    if (!user) return;
     if (!validateDates()) return;
 
     setLoading(true);
@@ -227,7 +216,7 @@ const CreateEvent: React.FC = () => {
       // Upload image if selected
       if (imageFile) {
         const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        const fileName = `${user.uid}/${Date.now()}.${fileExt}`;
         
         const { error: uploadError } = await supabase.storage
           .from('event-images')
@@ -243,9 +232,8 @@ const CreateEvent: React.FC = () => {
         }
       }
 
-      console.log('\ud83d\udcdd Inserting event with user_id:', user.id);
       const { data: eventData, error } = await supabase.from('events').insert([{
-        user_id: user.id,
+        user_id: user.uid,
         organizer_name: formData.organizerName,
         organizer_email: formData.organizerEmail,
         organizer_description: formData.organizerDescription || null,
@@ -272,9 +260,18 @@ const CreateEvent: React.FC = () => {
 
       // Notify admin about new event
       try {
-        await supabase.functions.invoke('notify-admin-new-event', {
-          body: { event_id: eventData.id },
-        });
+        // Get Firebase ID token for authentication
+        const idToken = await user.getIdToken();
+        if (idToken) {
+          await supabase.functions.invoke('notify-admin-new-event', {
+            body: { event_id: eventData.id },
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          });
+        } else {
+          console.warn('No Firebase token available for admin notification');
+        }
       } catch (emailError) {
         console.error('Failed to notify admin:', emailError);
       }

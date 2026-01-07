@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Check, X, Clock, Eye, MessageSquare, Calendar, MapPin, User, Mail, DollarSign, Tag, ExternalLink, Image as ImageIcon } from 'lucide-react';
+import { Shield, Check, X, Clock, Eye, MessageSquare, Calendar, MapPin, User, Mail, DollarSign, Tag, ExternalLink, Image as ImageIcon, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -67,7 +67,7 @@ const AdminDashboard: React.FC = () => {
     const { data, error } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('user_id', user.uid)
       .eq('role', 'admin')
       .maybeSingle();
 
@@ -115,7 +115,7 @@ const AdminDashboard: React.FC = () => {
         status: newStatus,
         admin_notes: adminNotes || null,
         approved_at: action === 'approve' ? new Date().toISOString() : null,
-        approved_by: action === 'approve' ? user?.id : null,
+        approved_by: action === 'approve' ? user?.uid : null,
       })
       .eq('id', selectedEvent.id);
 
@@ -458,6 +458,15 @@ const AdminDashboard: React.FC = () => {
                                 >
                                   <Eye className="w-4 h-4 mr-1" />
                                   {language === 'sv' ? 'Visa' : 'View'}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => navigate(`/edit-event/${event.id}`)}
+                                  className="flex-1 lg:flex-none"
+                                >
+                                  <Edit className="w-4 h-4 mr-1" />
+                                  {language === 'sv' ? 'Redigera' : 'Edit'}
                                 </Button>
                                 {event.status === 'pending' && (
                                   <>
