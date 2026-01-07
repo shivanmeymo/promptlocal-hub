@@ -121,46 +121,90 @@ const cityAliases: Record<string, string> = {
 
 export const reverseGeocodeCity = async (coords: LatLng, allowedCities: string[]): Promise<string | null> => {
   try {
+    console.log('🔍 reverseGeocodeCity called with:', { coords, allowedCities });
     const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${coords.lat},${coords.lng}&key=${GOOGLE_MAPS_API_KEY}`;
+    console.log('🌐 Fetching Google Maps API:', url.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN'));
     const res = await fetch(url);
     const data = await res.json();
-    if (!data.results || data.results.length === 0) return null;
+    console.log('📦 Google Maps API response:', data);
+    console.log('   - Status:', data.status);
+    console.log('   - Error message:', data.error_message);
+    console.log('   - Results count:', data.results?.length || 0);
+    
+    if (data.status !== 'OK') {
+      console.log('❌ Google Maps API error:', data.status, data.error_message);
+      return null;
+    }
+    
+    if (!data.results || data.results.length === 0) {
+      console.log('❌ No results from Google Maps API');
+      return null;
+    }
+    
     // Prefer locality from best result
     const locality = extractLocality(data.results[0]);
+    console.log('🏘️ Extracted locality from first result:', locality);
+    
     const candidates = new Set<string>();
     if (locality) candidates.add(locality);
+    
     // Add all locality-like components from all results as fallback candidates
     for (const r of data.results) {
       const l = extractLocality(r);
       if (l) candidates.add(l);
     }
+    console.log('🎯 All candidate cities:', Array.from(candidates));
+    
     // Compare against allowedCities using diacritic-insensitive match and canonical mapping
     const allowedNorm = allowedCities.map(c => ({ orig: c, n: norm(c) }));
+    console.log('✅ Allowed cities (normalized):', allowedNorm);
+    
     for (const cand of candidates) {
       const cn = norm(cand);
+      console.log(`🔎 Checking candidate: "${cand}" (normalized: "${cn}")`);
+      
       // Alias mapping first (e.g., Solna -> Stockholm)
       const alias = cityAliases[cn];
       if (alias) {
+        console.log(`  🔗 Found alias: ${cand} -> ${alias}`);
         const aMatch = allowedNorm.find(a => a.orig === alias);
-        if (aMatch) return aMatch.orig;
+        if (aMatch) {
+          console.log(`  ✅ MATCH via alias! Returning: ${aMatch.orig}`);
+          return aMatch.orig;
+        }
       }
+      
       const canon = norm(swedishCityCanon(cand));
+      console.log(`  📝 Canonical form: "${canon}"`);
       const match = allowedNorm.find(a => a.n === cn || a.n === canon);
-      if (match) return match.orig;
+      if (match) {
+        console.log(`  ✅ MATCH! Returning: ${match.orig}`);
+        return match.orig;
+      }
     }
+    
+    console.log('🔄 Trying substring containment...');
     // If still not found, try substring containment
     for (const cand of candidates) {
       const cn = norm(cand);
       const alias = cityAliases[cn];
       if (alias) {
         const aMatch = allowedNorm.find(a => a.orig === alias);
-        if (aMatch) return aMatch.orig;
+        if (aMatch) {
+          console.log(`  ✅ MATCH via substring alias! Returning: ${aMatch.orig}`);
+          return aMatch.orig;
+        }
       }
       const match = allowedNorm.find(a => cn.includes(a.n) || a.n.includes(cn));
-      if (match) return match.orig;
+      if (match) {
+        console.log(`  ✅ MATCH via substring! Returning: ${match.orig}`);
+        return match.orig;
+      }
     }
+    
+    console.log('❌ No matching city found');
   } catch (e) {
-    console.error('Failed to determine city from reverse geocode', coords, e);
+    console.error('💥 Failed to determine city from reverse geocode', coords, e);
   }
   return null;
 };

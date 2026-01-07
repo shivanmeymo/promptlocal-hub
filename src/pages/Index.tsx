@@ -118,20 +118,41 @@ const Index: React.FC = () => {
   // On first load, ask for location and set city filter + header city
   useEffect(() => {
     (async () => {
+      // Check if user already has a saved city
       try {
+        const savedCity = localStorage.getItem('nit_user_city');
+        if (savedCity) {
+          console.log('💾 Using saved city from localStorage:', savedCity);
+          setFilters(f => ({ ...f, location: savedCity }));
+          return;
+        }
+      } catch {}
+
+      try {
+        console.log('🌍 Requesting geolocation...');
         const coords = await getCurrentPosition();
+        console.log('📍 Got coordinates:', coords);
         const cities = ['Stockholm','Göteborg','Malmö','Umeå','Västerås','Uppsala'];
         const { reverseGeocodeCity } = await import('@/lib/geo');
         const matched = await reverseGeocodeCity(coords, cities);
+        console.log('🏙️ Matched city:', matched);
         if (matched) {
           setFilters(f => ({ ...f, location: matched }));
+          console.log('✅ Updated filters with location:', matched);
           try { 
             localStorage.setItem('nit_user_city', matched);
             window.dispatchEvent(new CustomEvent('nit_city_updated', { detail: matched }));
+            console.log('💾 Saved to localStorage and dispatched event');
           } catch {}
+        } else {
+          // Geocoding failed or user not in one of the 6 cities
+          // Set a default city or let user select manually from filter
+          console.log('🤷 Could not match to a Swedish city. User can select manually from filter.');
         }
-      } catch {
-        // ignore if user denies
+      } catch (err) {
+        console.log('❌ Geolocation error or denied:', err);
+        // User denied location or error occurred
+        // They can still select city manually from the filter dropdown
       }
     })();
   }, []);

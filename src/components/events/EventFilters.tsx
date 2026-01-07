@@ -64,9 +64,10 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
   // Sync with external location changes
   React.useEffect(() => {
     if (initialLocation && initialLocation !== selectedFilters.location) {
+      console.log('🔄 EventFilters: Syncing location to:', initialLocation);
       setSelectedFilters(f => ({ ...f, location: initialLocation }));
     }
-  }, [initialLocation]);
+  }, [initialLocation, selectedFilters.location]);
   const [radiusKm, setRadiusKm] = useState<number>(25);
 
   const handleFreeOnlyChange = (checked: boolean) => {
@@ -236,8 +237,23 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
           </Label>
           <Select
             onValueChange={(value) => {
-              setSelectedFilters(f => ({ ...f, location: value === 'all' ? '' : value }));
-              onLocationChange(value === 'all' ? '' : value);
+              const newLocation = value === 'all' ? '' : value;
+              setSelectedFilters(f => ({ ...f, location: newLocation }));
+              onLocationChange(newLocation);
+              // Save to localStorage and dispatch event when user manually selects a city
+              if (newLocation) {
+                try {
+                  localStorage.setItem('nit_user_city', newLocation);
+                  window.dispatchEvent(new CustomEvent('nit_city_updated', { detail: newLocation }));
+                  console.log('\ud83d\udc64 User manually selected city:', newLocation);
+                } catch {}
+              } else {
+                // User selected "All cities", clear the saved city
+                try {
+                  localStorage.removeItem('nit_user_city');
+                  window.dispatchEvent(new CustomEvent('nit_city_updated', { detail: null }));
+                } catch {}
+              }
             }}
             value={selectedFilters.location || 'all'}
           >

@@ -82,14 +82,24 @@ export const Navbar: React.FC = () => {
 
   // Load city from localStorage and listen for updates
   useEffect(() => {
-    try { setUserCity(localStorage.getItem('nit_user_city')); } catch {}
+    try { 
+      const city = localStorage.getItem('nit_user_city');
+      console.log('🗺️ Navbar: Loading city from localStorage:', city);
+      setUserCity(city);
+    } catch {}
     const handler = (e: Event) => {
       const ce = e as CustomEvent<string>;
-      setUserCity(ce.detail || (typeof localStorage !== 'undefined' ? localStorage.getItem('nit_user_city') : null));
+      const newCity = ce.detail || (typeof localStorage !== 'undefined' ? localStorage.getItem('nit_user_city') : null);
+      console.log('🗺️ Navbar: City updated event received:', newCity);
+      setUserCity(newCity);
     };
     window.addEventListener('nit_city_updated', handler as EventListener);
     const storageHandler = () => {
-      try { setUserCity(localStorage.getItem('nit_user_city')); } catch {}
+      try { 
+        const city = localStorage.getItem('nit_user_city');
+        console.log('🗺️ Navbar: Storage event - city:', city);
+        setUserCity(city);
+      } catch {}
     };
     window.addEventListener('storage', storageHandler);
     return () => {
