@@ -49,10 +49,10 @@ const NavLinks = memo(({ mobile, onClose, t, user }: {
       <Link to="/about" className={linkClass} onClick={onClose} aria-label={t('nav.about')}>
         {t('nav.about')}
       </Link>
-      <Link to="/contact" className={linkClass} onClick={onClose}>
+      <Link to="/contact" className={linkClass} onClick={onClose} aria-label={t('nav.contact')}>
         {t('nav.contact')}
       </Link>
-    </>
+    </nav>
   );
 });
 NavLinks.displayName = 'NavLinks';
