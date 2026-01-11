@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Check, X, Clock, Eye, MessageSquare, Calendar, MapPin, User, Mail, DollarSign, Tag, ExternalLink, Image as ImageIcon, Edit } from 'lucide-react';
+import { Shield, Check, X, Clock, Eye, MessageSquare, Calendar, MapPin, User, Mail, DollarSign, Tag, ExternalLink, Image as ImageIcon, Edit, Users, BarChart3, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +52,14 @@ const AdminDashboard: React.FC = () => {
   const [adminNotes, setAdminNotes] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [dialogAction, setDialogAction] = useState<'approve' | 'reject' | 'view' | null>(null);
+  const [stats, setStats] = useState({
+    totalEvents: 0,
+    pendingEvents: 0,
+    approvedEvents: 0,
+    rejectedEvents: 0,
+    totalUsers: 0,
+    eventsThisMonth: 0,
+  });
 
   useEffect(() => {
     if (!user) {
@@ -99,8 +107,37 @@ const AdminDashboard: React.FC = () => {
       });
     } else {
       setEvents(data || []);
+      calculateStats(data || []);
     }
     setLoading(false);
+  };
+
+  const calculateStats = async (eventsData: Event[]) => {
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+
+    const pending = eventsData.filter(e => e.status === 'pending').length;
+    const approved = eventsData.filter(e => e.status === 'approved').length;
+    const rejected = eventsData.filter(e => e.status === 'rejected').length;
+    const thisMonthEvents = eventsData.filter(e => {
+      const eventDate = new Date(e.created_at);
+      return eventDate.getMonth() === thisMonth && eventDate.getFullYear() === thisYear;
+    }).length;
+
+    // Get total users count
+    const { count: usersCount } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true });
+
+    setStats({
+      totalEvents: eventsData.length,
+      pendingEvents: pending,
+      approvedEvents: approved,
+      rejectedEvents: rejected,
+      totalUsers: usersCount || 0,
+      eventsThisMonth: thisMonthEvents,
+    });
   };
 
   const handleAction = async (action: 'approve' | 'reject') => {
@@ -127,12 +164,21 @@ const AdminDashboard: React.FC = () => {
       });
     } else {
       try {
-        await supabase.functions.invoke('send-event-approval-notification', {
-          body: {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        
+        await fetch(`${supabaseUrl}/functions/v1/send-event-approval-notification`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': anonKey,
+            'Authorization': `Bearer ${anonKey}`,
+          },
+          body: JSON.stringify({
             event_id: selectedEvent.id,
             status: newStatus,
             admin_notes: adminNotes,
-          },
+          }),
         });
       } catch (emailError) {
         console.error('Failed to send email notification:', emailError);
@@ -267,77 +313,6 @@ const AdminDashboard: React.FC = () => {
               </p>
             </div>
           </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-warning/5 to-transparent"></div>
-            <CardContent className="pt-6 relative">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {language === 'sv' ? 'Väntar' : 'Pending'}
-                  </p>
-                  <p className="text-3xl font-bold text-warning">{pendingCount}</p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-warning" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-success/5 to-transparent"></div>
-            <CardContent className="pt-6 relative">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {language === 'sv' ? 'Godkända' : 'Approved'}
-                  </p>
-                  <p className="text-3xl font-bold text-success">{approvedCount}</p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
-                  <Check className="w-6 h-6 text-success" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-destructive/5 to-transparent"></div>
-            <CardContent className="pt-6 relative">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {language === 'sv' ? 'Avvisade' : 'Rejected'}
-                  </p>
-                  <p className="text-3xl font-bold text-destructive">{rejectedCount}</p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
-                  <X className="w-6 h-6 text-destructive" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent"></div>
-            <CardContent className="pt-6 relative">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {language === 'sv' ? 'Totalt' : 'Total'}
-                  </p>
-                  <p className="text-3xl font-bold text-accent">{events.length}</p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
-                  <Calendar className="w-6 h-6 text-accent" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Events Tabs */}

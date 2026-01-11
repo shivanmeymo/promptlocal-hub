@@ -27,6 +27,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 
 // Cloudflare Turnstile site key (public)
+// Production key for nowintown.se, can be overridden with VITE_TURNSTILE_SITE_KEY for localhost
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || "0x4AAAAAACKgQEPVM6HOoY9T";
 
 declare global {

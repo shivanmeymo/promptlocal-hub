@@ -71,10 +71,20 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   disabled = false,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
+  const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
+  const onChangeRef = useRef(onChange);
+  const justSelectedRef = useRef(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [suggestions, setSuggestions] = useState<google.maps.places.AutocompletePrediction[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [fallbackSuggestions, setFallbackSuggestions] = useState<string[]>([]);
   const [showFallback, setShowFallback] = useState(false);
+
+  // Keep onChange ref up to date
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   // Swedish cities fallback
   const swedishLocations = [
@@ -94,43 +104,52 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     loadGoogleMapsScript().then(() => {
       if (window.google?.maps?.places) {
         setIsLoaded(true);
+        autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
+        // Create a dummy div for PlacesService
+        const dummyDiv = document.createElement('div');
+        placesServiceRef.current = new window.google.maps.places.PlacesService(dummyDiv);
       }
     });
   }, []);
 
   useEffect(() => {
-    if (!isLoaded || !inputRef.current || autocompleteRef.current) return;
-
-    try {
-      autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
-        types: ['geocode', 'establishment'],
-        componentRestrictions: { country: 'se' }, // Restrict to Sweden
-      });
-
-      autocompleteRef.current.addListener('place_changed', () => {
-        const place = autocompleteRef.current?.getPlace();
-        // Only update if a valid place was selected from dropdown
-        if (place?.formatted_address) {
-          onChange(place.formatted_address);
-        } else if (place?.name) {
-          onChange(place.name);
-        }
-        // If no place was selected, keep the manually typed value (don't override)
-      });
-    } catch (error) {
-      console.error('Failed to initialize autocomplete:', error);
+    if (!isLoaded || !autocompleteServiceRef.current || !value || value.length < 3) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
     }
 
-    return () => {
-      if (autocompleteRef.current) {
-        window.google?.maps?.event?.clearInstanceListeners(autocompleteRef.current);
-      }
-    };
-  }, [isLoaded, onChange]);
+    // Don't show suggestions if user just selected one
+    if (justSelectedRef.current) {
+      justSelectedRef.current = false;
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      autocompleteServiceRef.current?.getPlacePredictions(
+        {
+          input: value,
+          componentRestrictions: { country: 'se' },
+          types: ['geocode', 'establishment'],
+        },
+        (predictions, status) => {
+          if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+            setSuggestions(predictions);
+            setShowSuggestions(true);
+          } else {
+            setSuggestions([]);
+            setShowSuggestions(false);
+          }
+        }
+      );
+    }, 300); // Debounce
+
+    return () => clearTimeout(timer);
+  }, [value, isLoaded]);
 
   const handleInput = useCallback((inputValue: string) => {
-    // Always update the parent value immediately when typing
-    onChange(inputValue);
+    // Always update the parent value immediately when typing manually
+    onChangeRef.current(inputValue);
     
     if (!isLoaded && inputValue.length > 1) {
       const filtered = swedishLocations.filter(loc =>
@@ -141,11 +160,27 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     } else {
       setShowFallback(false);
     }
-  }, [isLoaded, onChange]);
+  }, [isLoaded]);
+
+  const selectSuggestion = (description: string) => {
+    justSelectedRef.current = true;
+    onChangeRef.current(description);
+    setShowSuggestions(false);
+    setSuggestions([]);
+  };
 
   const selectFallbackLocation = (loc: string) => {
-    onChange(loc);
+    justSelectedRef.current = true;
+    onChangeRef.current(loc);
     setShowFallback(false);
+  };
+
+  const handleBlur = () => {
+    // Delay hiding to allow click events to fire
+    setTimeout(() => {
+      setShowSuggestions(false);
+      setShowFallback(false);
+    }, 200);
   };
 
   return (
@@ -157,13 +192,30 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           type="text"
           value={value}
           onChange={(e) => handleInput(e.target.value)}
-          onBlur={() => setTimeout(() => setShowFallback(false), 200)}
+          onBlur={handleBlur}
           placeholder={placeholder}
           className={`pl-10 ${className}`}
           disabled={disabled}
           autoComplete="off"
         />
       </div>
+      
+      {/* Google Maps suggestions */}
+      {showSuggestions && suggestions.length > 0 && (
+        <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-auto">
+          {suggestions.map((suggestion) => (
+            <button
+              key={suggestion.place_id}
+              type="button"
+              className="w-full px-4 py-2 text-left hover:bg-muted transition-colors text-sm"
+              onClick={() => selectSuggestion(suggestion.description)}
+            >
+              <MapPin className="w-3 h-3 inline mr-2 text-muted-foreground" />
+              {suggestion.description}
+            </button>
+          ))}
+        </div>
+      )}
       
       {/* Fallback suggestions when Google API isn't available */}
       {showFallback && fallbackSuggestions.length > 0 && (

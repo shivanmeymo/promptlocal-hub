@@ -32,3 +32,8 @@ secret firebase/
 !tsconfig*.json
 !components.json
 !vercel.json
+
+# Supabase
+supabase/.temp/
+supabase/.branches/
+.env.local

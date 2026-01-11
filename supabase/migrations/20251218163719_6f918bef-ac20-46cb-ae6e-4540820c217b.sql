@@ -1,6 +1,6 @@
 -- Create atomic AI usage increment function
 CREATE OR REPLACE FUNCTION increment_ai_usage(
-  p_user_id uuid,
+  p_user_id text,
   p_date date,
   p_max_limit int DEFAULT 4
 )

@@ -159,7 +159,7 @@ const EditEvent: React.FC = () => {
   const removeImage = () => {
     setImageFile(null);
     setImagePreview(null);
-    setFormData({ ...formData, imageUrl: '' });
+    setFormData(prev => ({ ...prev, imageUrl: '' }));
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -194,7 +194,7 @@ const EditEvent: React.FC = () => {
 
       if (imageFile) {
         const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        const fileName = `${user.uid}/${Date.now()}.${fileExt}`;
         
         const { error: uploadError } = await supabase.storage
           .from('event-images')
@@ -299,7 +299,7 @@ const EditEvent: React.FC = () => {
                   <Input
                     id="organizerName"
                     value={formData.organizerName}
-                    onChange={(e) => setFormData({ ...formData, organizerName: e.target.value })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, organizerName: e.target.value }))}
                     required
                   />
                 </div>
@@ -312,7 +312,7 @@ const EditEvent: React.FC = () => {
                     id="organizerEmail"
                     type="email"
                     value={formData.organizerEmail}
-                    onChange={(e) => setFormData({ ...formData, organizerEmail: e.target.value })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, organizerEmail: e.target.value }))}
                     required
                   />
                 </div>
@@ -326,7 +326,7 @@ const EditEvent: React.FC = () => {
                     id="organizerWebsite"
                     type="url"
                     value={formData.organizerWebsite}
-                    onChange={(e) => setFormData({ ...formData, organizerWebsite: e.target.value })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, organizerWebsite: e.target.value }))}
                   />
                 </div>
 
@@ -335,7 +335,7 @@ const EditEvent: React.FC = () => {
                   <Textarea
                     id="organizerDescription"
                     value={formData.organizerDescription}
-                    onChange={(e) => setFormData({ ...formData, organizerDescription: e.target.value })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, organizerDescription: e.target.value }))}
                     rows={3}
                   />
                 </div>
@@ -352,7 +352,7 @@ const EditEvent: React.FC = () => {
                     <Label>{language === 'sv' ? 'Evenemangsformat' : 'Event Format'}</Label>
                     <RadioGroup
                       value={formData.isOnline ? 'online' : 'offline'}
-                      onValueChange={(val) => setFormData({ ...formData, isOnline: val === 'online' })}
+                      onValueChange={(val) => setFormData(prev => ({ ...prev, isOnline: val === 'online' }))}
                     >
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="offline" id="offline" />
@@ -375,7 +375,7 @@ const EditEvent: React.FC = () => {
                     <Label>{language === 'sv' ? 'Frekvens' : 'Frequency'}</Label>
                     <RadioGroup
                       value={formData.isRecurring ? 'recurring' : 'single'}
-                      onValueChange={(val) => setFormData({ ...formData, isRecurring: val === 'recurring' })}
+                      onValueChange={(val) => setFormData(prev => ({ ...prev, isRecurring: val === 'recurring' }))}
                     >
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="single" id="single" />
@@ -399,7 +399,7 @@ const EditEvent: React.FC = () => {
                     <Label>{language === 'sv' ? 'Återkommande mönster' : 'Recurring Pattern'}</Label>
                     <Select
                       value={formData.recurringPattern}
-                      onValueChange={(value) => setFormData({ ...formData, recurringPattern: value })}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, recurringPattern: value }))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder={language === 'sv' ? 'Välj frekvens' : 'Select frequency'} />
@@ -426,99 +426,9 @@ const EditEvent: React.FC = () => {
                   <Input
                     id="title"
                     value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                     required
                   />
-                </div>
-
-                <div>
-                  <Label htmlFor="description">
-                    {t('create.eventDesc')} <span className="text-destructive">*</span>
-                  </Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={4}
-                    required
-                  />
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="startDate">
-                      {t('create.startDate')} <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="startDate"
-                      type="date"
-                      value={formData.startDate}
-                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="startTime">
-                      {t('create.startTime')} <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="startTime"
-                      type="time"
-                      value={formData.startTime}
-                      onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="endDate">
-                      {t('create.endDate')} <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="endDate"
-                      type="date"
-                      value={formData.endDate}
-                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="endTime">
-                      {t('create.endTime')} <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="endTime"
-                      type="time"
-                      value={formData.endTime}
-                      onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="location">
-                    {t('create.location')} <span className="text-destructive">*</span>
-                  </Label>
-                  {formData.isOnline ? (
-                    <Input
-                      id="location"
-                      value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      placeholder={language === 'sv' ? 'Länk eller plattform' : 'Link or platform'}
-                      required
-                    />
-                  ) : (
-                    <Suspense fallback={<Input placeholder="Location" disabled />}> 
-                     <LazyLocationAutocomplete
-                      value={formData.location}
-                      onChange={(value) => setFormData({ ...formData, location: value })}
-                      placeholder={language === 'sv' ? 'Sök efter plats...' : 'Search for location...'}
-                    />
-                    </Suspense>
-                  )}
                 </div>
 
                 <div>
@@ -527,7 +437,7 @@ const EditEvent: React.FC = () => {
                   </Label>
                   <Select
                     value={formData.category}
-                    onValueChange={(value) => setFormData({ ...formData, category: value as typeof categories[number] })}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, category: value as typeof categories[number] }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -550,11 +460,101 @@ const EditEvent: React.FC = () => {
                     <Input
                       id="otherCategory"
                       value={formData.otherCategory}
-                      onChange={(e) => setFormData({ ...formData, otherCategory: e.target.value })}
+                      onChange={(e) => setFormData(prev => ({ ...prev, otherCategory: e.target.value }))}
                       required={formData.category === 'other'}
                     />
                   </div>
                 )}
+
+                <div>
+                  <Label htmlFor="description">
+                    {t('create.eventDesc')} <span className="text-destructive">*</span>
+                  </Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    rows={4}
+                    required
+                  />
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="startDate">
+                      {t('create.startDate')} <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="startDate"
+                      type="date"
+                      value={formData.startDate}
+                      onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="startTime">
+                      {t('create.startTime')} <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="startTime"
+                      type="time"
+                      value={formData.startTime}
+                      onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="endDate">
+                      {t('create.endDate')} <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="endDate"
+                      type="date"
+                      value={formData.endDate}
+                      onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="endTime">
+                      {t('create.endTime')} <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="endTime"
+                      type="time"
+                      value={formData.endTime}
+                      onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="location">
+                    {t('create.location')} <span className="text-destructive">*</span>
+                  </Label>
+                  {formData.isOnline ? (
+                    <Input
+                      id="location"
+                      value={formData.location}
+                      onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                      placeholder={language === 'sv' ? 'Länk eller plattform' : 'Link or platform'}
+                      required
+                    />
+                  ) : (
+                    <Suspense fallback={<Input placeholder="Location" disabled />}> 
+                     <LazyLocationAutocomplete
+                      value={formData.location}
+                      onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
+                      placeholder={language === 'sv' ? 'Sök efter plats...' : 'Search for location...'}
+                    />
+                    </Suspense>
+                  )}
+                </div>
 
                 <div>
                   <Label>{t('create.price')}</Label>
@@ -563,7 +563,7 @@ const EditEvent: React.FC = () => {
                       <Checkbox
                         id="isFree"
                         checked={formData.isFree}
-                        onCheckedChange={(checked) => setFormData({ ...formData, isFree: !!checked })}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isFree: !!checked }))}
                       />
                       <Label htmlFor="isFree" className="cursor-pointer">
                         {t('create.isFree')}
@@ -574,7 +574,7 @@ const EditEvent: React.FC = () => {
                     <Input
                       type="number"
                       value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
                       placeholder="0.00"
                       min="0"
                       step="0.01"

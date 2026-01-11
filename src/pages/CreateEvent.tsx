@@ -124,6 +124,35 @@ const CreateEvent: React.FC = () => {
 
     setAiLoading(true);
     try {
+      // Get Firebase user token
+      if (!user) {
+        toast({
+          title: language === 'sv' ? 'Inte inloggad' : 'Not logged in',
+          description: language === 'sv' ? 'Du måste vara inloggad för att använda AI' : 'You must be logged in to use AI',
+          variant: 'destructive',
+        });
+        setAiLoading(false);
+        return;
+      }
+
+      // Get the Firebase ID token
+      const token = await user.getIdToken();
+      console.log("🔑 Firebase token obtained, length:", token.length);
+      console.log("🔑 Token preview:", token.substring(0, 50) + "...");
+      console.log("🔑 Token has 3 parts:", token.split('.').length === 3);
+      
+      // Try to decode locally to see what's in it
+      try {
+        const parts = token.split('.');
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        console.log("🔍 Token payload claims:", Object.keys(payload));
+        console.log("🔍 Token sub (user ID):", payload.sub);
+        console.log("🔍 Token user_id:", payload.user_id);
+        console.log("🔍 Token exp:", new Date(payload.exp * 1000).toISOString());
+      } catch (e) {
+        console.error("❌ Failed to decode token locally:", e);
+      }
+
       // Server handles authentication and atomic rate limiting
       const { data, error } = await supabase.functions.invoke('generate-event-description', {
         body: {
@@ -135,7 +164,10 @@ const CreateEvent: React.FC = () => {
         },
       });
 
+      console.log('AI Response:', { data, error });
+
       if (error) {
+        console.error('AI Error object:', error);
         // Handle rate limit error specifically
         if (error.message?.includes('429') || data?.error?.includes('limit')) {
           toast({
@@ -177,9 +209,12 @@ const CreateEvent: React.FC = () => {
       }
     } catch (error: any) {
       console.error('AI generation error:', error);
+      const errorMessage = error?.message || error?.toString() || 'Unknown error';
       toast({
         title: t('common.error'),
-        description: language === 'sv' ? 'Kunde inte generera beskrivning' : 'Could not generate description',
+        description: language === 'sv' 
+          ? `Kunde inte generera beskrivning: ${errorMessage}` 
+          : `Could not generate description: ${errorMessage}`,
         variant: 'destructive',
       });
     }
@@ -257,24 +292,33 @@ const CreateEvent: React.FC = () => {
       }]).select().single();
 
       if (error) throw error;
+      if (!eventData) throw new Error('Event creation failed - no data returned');
 
-      // Notify admin about new event
-      try {
-        // Get Firebase ID token for authentication
-        const idToken = await user.getIdToken();
-        if (idToken) {
-          await supabase.functions.invoke('notify-admin-new-event', {
-            body: { event_id: eventData.id },
-            headers: {
-              Authorization: `Bearer ${idToken}`,
-            },
-          });
+      console.log('✅ Event created successfully with ID:', eventData.id);
+
+      // Notify admin about new event (runs in background, don't block UI)
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      
+      fetch(`${supabaseUrl}/functions/v1/notify-admin-new-event`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': anonKey,
+          'Authorization': `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify({ event_id: eventData.id }),
+      }).then(async response => {
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ Email notification failed:', response.status, errorText);
         } else {
-          console.warn('No Firebase token available for admin notification');
+          const result = await response.json();
+          console.log('✅ Email notification sent:', result);
         }
-      } catch (emailError) {
-        console.error('Failed to notify admin:', emailError);
-      }
+      }).catch(emailError => {
+        console.error('❌ Failed to notify admin:', emailError);
+      });
 
       toast({
         title: t('create.success'),
@@ -469,6 +513,43 @@ const CreateEvent: React.FC = () => {
                 </div>
 
                 <div>
+                  <Label htmlFor="category">
+                    {t('create.category')} <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) => setFormData({ ...formData, category: value as typeof categories[number] })}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={language === 'sv' ? 'Välj en kategori' : 'Select a category'} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      {categories.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {t(`category.${cat}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.category === 'other' && (
+                  <div>
+                    <Label htmlFor="otherCategory">
+                      {language === 'sv' ? 'Ange kategori' : 'Specify category'} <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="otherCategory"
+                      value={formData.otherCategory}
+                      onChange={(e) => setFormData({ ...formData, otherCategory: e.target.value })}
+                      placeholder={language === 'sv' ? 'Ange din kategori' : 'Enter your category'}
+                      required={formData.category === 'other'}
+                    />
+                  </div>
+                )}
+
+                <div>
                   <div className="flex items-center justify-between mb-2">
                     <Label htmlFor="description">
                       {t('create.eventDesc')} <span className="text-destructive">*</span>
@@ -561,7 +642,7 @@ const CreateEvent: React.FC = () => {
                     <Input
                       id="location"
                       value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
                       placeholder={language === 'sv' ? 'Länk eller plattform' : 'Link or platform'}
                       required
                     />
@@ -569,49 +650,12 @@ const CreateEvent: React.FC = () => {
                     <Suspense fallback={<Input placeholder="Location" disabled />}> 
                       <LazyLocationAutocomplete
                       value={formData.location}
-                      onChange={(value) => setFormData({ ...formData, location: value })}
+                      onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
                       placeholder={language === 'sv' ? 'Sök efter plats...' : 'Search for location...'}
                     />
                     </Suspense>
                   )}
                 </div>
-
-                <div>
-                  <Label htmlFor="category">
-                    {t('create.category')} <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={formData.category}
-                    onValueChange={(value) => setFormData({ ...formData, category: value as typeof categories[number] })}
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={language === 'sv' ? 'Välj en kategori' : 'Select a category'} />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      {categories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {t(`category.${cat}`)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {formData.category === 'other' && (
-                  <div>
-                    <Label htmlFor="otherCategory">
-                      {language === 'sv' ? 'Ange kategori' : 'Specify category'} <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="otherCategory"
-                      value={formData.otherCategory}
-                      onChange={(e) => setFormData({ ...formData, otherCategory: e.target.value })}
-                      placeholder={language === 'sv' ? 'Ange din kategori' : 'Enter your category'}
-                      required={formData.category === 'other'}
-                    />
-                  </div>
-                )}
 
                 <div>
                   <Label>

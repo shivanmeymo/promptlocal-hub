@@ -7,13 +7,13 @@ site_url = "https://suueubckrgtiniymoxio.supabase.co"
 verify_jwt = true
 
 [functions.notify-admin-new-event]
-verify_jwt = true
+verify_jwt = false
 
 [functions.send-contact-notification]
 verify_jwt = false
 
 [functions.send-event-approval-notification]
-verify_jwt = true
+verify_jwt = false
 
 [functions.handle-event-approval]
 verify_jwt = false

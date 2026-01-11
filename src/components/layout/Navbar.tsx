@@ -63,7 +63,6 @@ export const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [userCity, setUserCity] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -79,34 +78,6 @@ export const Navbar: React.FC = () => {
       .maybeSingle()
       .then(({ data }) => setIsAdmin(!!data));
   }, [user]);
-
-  // Load city from localStorage and listen for updates
-  useEffect(() => {
-    try { 
-      const city = localStorage.getItem('nit_user_city');
-      console.log('🗺️ Navbar: Loading city from localStorage:', city);
-      setUserCity(city);
-    } catch {}
-    const handler = (e: Event) => {
-      const ce = e as CustomEvent<string>;
-      const newCity = ce.detail || (typeof localStorage !== 'undefined' ? localStorage.getItem('nit_user_city') : null);
-      console.log('🗺️ Navbar: City updated event received:', newCity);
-      setUserCity(newCity);
-    };
-    window.addEventListener('nit_city_updated', handler as EventListener);
-    const storageHandler = () => {
-      try { 
-        const city = localStorage.getItem('nit_user_city');
-        console.log('🗺️ Navbar: Storage event - city:', city);
-        setUserCity(city);
-      } catch {}
-    };
-    window.addEventListener('storage', storageHandler);
-    return () => {
-      window.removeEventListener('nit_city_updated', handler as EventListener);
-      window.removeEventListener('storage', storageHandler);
-    };
-  }, []);
 
   const handleSignOut = useCallback(async () => {
     await signOut();
@@ -133,17 +104,12 @@ export const Navbar: React.FC = () => {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-6">
-          {userCity && (
-            <span className="text-sm text-muted-foreground border rounded-full px-3 py-1" aria-live="polite">
-              {language === 'sv' ? 'Din stad:' : 'Your city:'} <span className="font-medium text-foreground">{userCity}</span>
-            </span>
-          )}
           <button
             onClick={toggleLanguage}
             className="p-1 rounded hover:bg-muted transition-all duration-300 hover:scale-110"
             aria-label={`Switch to ${language === 'en' ? 'Swedish' : 'English'}`}
           >
-            <span className="block transition-all duration-300 ease-in-out" style={{ transform: language === 'sv' ? 'rotateY(0deg)' : 'rotateY(180deg)' }}>
+            <span className="block transition-all duration-300 ease-in-out" style={{ transform: language === 'sv' ? 'rotateX(0deg)' : 'rotateX(180deg)' }}>
               {language === 'sv' ? <UKFlag /> : <SwedishFlag />}
             </span>
           </button>
@@ -234,17 +200,12 @@ export const Navbar: React.FC = () => {
 
         {/* Mobile Navigation */}
         <div className="md:hidden flex items-center gap-2">
-          {userCity && (
-            <span className="text-xs text-muted-foreground border rounded-full px-2 py-0.5" aria-live="polite">
-              {language === 'sv' ? 'Din stad:' : 'Your city:'} <span className="font-medium text-foreground">{userCity}</span>
-            </span>
-          )}
           <button
             onClick={toggleLanguage}
             className="p-1 rounded hover:bg-muted transition-all duration-300 hover:scale-110"
             aria-label={`Switch to ${language === 'en' ? 'Swedish' : 'English'}`}
           >
-            <span className="block transition-all duration-300 ease-in-out" style={{ transform: language === 'sv' ? 'rotateY(0deg)' : 'rotateY(180deg)' }}>
+            <span className="block transition-all duration-300 ease-in-out" style={{ transform: language === 'sv' ? 'rotateX(0deg)' : 'rotateX(180deg)' }}>
               {language === 'sv' ? <UKFlag /> : <SwedishFlag />}
             </span>
           </button>

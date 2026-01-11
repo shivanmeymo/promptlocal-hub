@@ -162,8 +162,10 @@ const translations: Translations = {
   'category.sports': { en: 'Sports', sv: 'Sport' },
   'category.art': { en: 'Art', sv: 'Konst' },
   'category.food': { en: 'Food', sv: 'Mat' },
+  'category.tech': { en: 'Tech', sv: 'Teknik' },
   'category.business': { en: 'Business', sv: 'Affärer' },
   'category.education': { en: 'Education', sv: 'Utbildning' },
+  'category.health': { en: 'Health', sv: 'Hälsa' },
   'category.community': { en: 'Community', sv: 'Gemenskap' },
   'category.other': { en: 'Other', sv: 'Övrigt' },
 

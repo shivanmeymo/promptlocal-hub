@@ -262,9 +262,9 @@ const EventDetails: React.FC = () => {
               <div className="flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-primary" aria-hidden="true" />
                 <dt className="sr-only">{language === 'sv' ? 'Plats' : 'Location'}</dt>
-                <span>{event.location}</span>
+                <dd>{event.location}</dd>
               </div>
-            </div>
+            </dl>
 
             <Separator />
 
@@ -402,7 +402,7 @@ const EventDetails: React.FC = () => {
               </CardContent>
             </Card>
           </div>
-        </div>
+        </article>
       </div>
     </Layout>
   );

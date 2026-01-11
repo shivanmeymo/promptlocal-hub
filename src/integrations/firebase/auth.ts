@@ -9,6 +9,8 @@ import {
   onAuthStateChanged,
   updatePassword as firebaseUpdatePassword,
   sendPasswordResetEmail,
+  EmailAuthProvider,
+  linkWithCredential,
   User,
   UserCredential
 } from 'firebase/auth';
@@ -78,6 +80,24 @@ export const signInWithGoogle = async (): Promise<UserCredential> => {
     console.error('Google sign-in error:', error);
     console.error('Error code:', error.code);
     console.error('Error message:', error.message);
+    
+    // Provide more helpful error messages
+    let userMessage = error.message;
+    if (error.code === 'auth/invalid-credential') {
+      userMessage = 'Google Sign-In configuration error. Please ensure:\n' +
+        '1. Google provider is enabled in Firebase Console\n' +
+        '2. OAuth consent screen is configured\n' +
+        '3. Your email is added as a test user (if app is in Testing mode)\n' +
+        '4. Authorized domains include localhost and your production domain';
+    } else if (error.code === 'auth/popup-blocked') {
+      userMessage = 'Pop-up was blocked by browser. Please allow pop-ups for this site.';
+    } else if (error.code === 'auth/popup-closed-by-user') {
+      userMessage = 'Sign-in cancelled. Please try again.';
+    } else if (error.code === 'auth/unauthorized-domain') {
+      userMessage = 'This domain is not authorized. Please add it in Firebase Console → Authentication → Settings → Authorized domains';
+    }
+    
+    error.message = userMessage;
     throw error;
   }
 };
@@ -144,4 +164,29 @@ export const deleteUserAccount = async (): Promise<void> => {
   const user = auth.currentUser;
   if (!user) throw new Error('No user logged in');
   await user.delete();
+};
+
+/**
+ * Link password to existing account (for Google users who want to add email/password login)
+ */
+export const linkPasswordToAccount = async (password: string): Promise<void> => {
+  const user = auth.currentUser;
+  if (!user || !user.email) {
+    throw new Error('No user logged in or no email available');
+  }
+
+  // Check if user already has password provider
+  const hasPasswordProvider = user.providerData.some(
+    provider => provider.providerId === 'password'
+  );
+
+  if (hasPasswordProvider) {
+    throw new Error('Account already has password authentication enabled');
+  }
+
+  // Create email/password credential
+  const credential = EmailAuthProvider.credential(user.email, password);
+  
+  // Link the credential to the current account
+  await linkWithCredential(user, credential);
 };

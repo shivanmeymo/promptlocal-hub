@@ -43,11 +43,17 @@ interface Notification {
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, linkPassword } = useAuth();
   const [authProvider, setAuthProvider] = useState<AuthProvider>("unknown");
   const [newEmail, setNewEmail] = useState("");
   const [emailLoading, setEmailLoading] = useState(false);
   const [unlinkLoading, setUnlinkLoading] = useState(false);
+  
+  // Password linking for Google users
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordLinking, setPasswordLinking] = useState(false);
+  const [hasPasswordAuth, setHasPasswordAuth] = useState(false);
   
   // Notification preferences
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -64,12 +70,16 @@ const Settings: React.FC = () => {
   useEffect(() => {
     if (user) {
       // Determine auth provider from user metadata
-      const provider = user.app_metadata?.provider;
-      if (provider === "google") {
+      const provider = user.providerData?.[0]?.providerId;
+      if (provider === "google.com") {
         setAuthProvider("google");
-      } else if (provider === "email" || user.email) {
+      } else if (provider === "password" || user.email) {
         setAuthProvider("email");
       }
+      
+      // Check if user has password authentication enabled
+      const hasPassword = user.providerData.some(p => p.providerId === 'password');
+      setHasPasswordAuth(hasPassword);
       
       // Fetch user's notification subscriptions
       fetchNotifications();
@@ -208,10 +218,43 @@ const Settings: React.FC = () => {
       await unlink(auth.currentUser, 'google.com');
       
       toast.success("Google-konto har kopplats bort.");
+      setAuthProvider("email");
     } catch (err: any) {
       toast.error(err?.message || "Ett fel inträffade.");
     } finally {
       setUnlinkLoading(false);
+    }
+  };
+
+  const handleLinkPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (newPassword !== confirmPassword) {
+      toast.error("Lösenorden matchar inte.");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error("Lösenordet måste vara minst 6 tecken.");
+      return;
+    }
+
+    setPasswordLinking(true);
+    try {
+      const { error } = await linkPassword(newPassword);
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success("Lösenord har lagts till! Du kan nu logga in med e-post och lösenord.");
+      setNewPassword("");
+      setConfirmPassword("");
+      setHasPasswordAuth(true);
+    } catch (err: any) {
+      toast.error(err?.message || "Kunde inte lägga till lösenord.");
+    } finally {
+      setPasswordLinking(false);
     }
   };
 
@@ -267,15 +310,67 @@ const Settings: React.FC = () => {
 
             {authProvider === "google" && (
               <>
+                {!hasPasswordAuth && (
+                  <>
+                    <Separator />
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-sm font-medium mb-1">Lägg till lösenord</p>
+                        <p className="text-sm text-muted-foreground">
+                          För ökad flexibilitet kan du lägga till e-post/lösenord-inloggning till ditt Google-konto.
+                        </p>
+                      </div>
+                      <form onSubmit={handleLinkPassword} className="space-y-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="new-password">Nytt lösenord</Label>
+                          <Input
+                            id="new-password"
+                            type="password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="Minst 6 tecken"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="confirm-password">Bekräfta lösenord</Label>
+                          <Input
+                            id="confirm-password"
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Upprepa lösenordet"
+                            required
+                          />
+                        </div>
+                        <Button
+                          type="submit"
+                          variant="default"
+                          disabled={passwordLinking || !newPassword || !confirmPassword}
+                          className="gap-2"
+                        >
+                          {passwordLinking ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Shield className="h-4 w-4" />
+                          )}
+                          Lägg till lösenord
+                        </Button>
+                      </form>
+                    </div>
+                  </>
+                )}
                 <Separator />
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">
-                    Vill du använda e-post och lösenord istället?
+                    {hasPasswordAuth
+                      ? "Du kan koppla bort Google och endast använda e-post/lösenord."
+                      : "Du måste först sätta ett lösenord innan du kan koppla bort Google."}
                   </p>
                   <Button
                     variant="outline"
                     onClick={handleUnlinkGoogle}
-                    disabled={unlinkLoading}
+                    disabled={unlinkLoading || !hasPasswordAuth}
                     className="gap-2"
                   >
                     {unlinkLoading ? (

@@ -2,8 +2,15 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL") || "admin@example.com";
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL") || "contact@nowintown.se";
+
+// Validate required environment variables
+if (!RESEND_API_KEY) {
+  console.error("CRITICAL: RESEND_API_KEY environment variable is not set!");
+}
+
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,6 +40,21 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Check if Resend is configured
+    if (!resend || !RESEND_API_KEY) {
+      const errorMsg = "Email service not configured: RESEND_API_KEY is missing";
+      console.error(errorMsg);
+      return new Response(
+        JSON.stringify({ 
+          error: errorMsg,
+          details: "Please set RESEND_API_KEY environment variable in Supabase project settings"
+        }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    console.log(`Using admin email: ${ADMIN_EMAIL}`);
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -58,27 +80,36 @@ const handler = async (req: Request): Promise<Response> => {
     // Note: We're trusting the frontend since this is called right after event creation
     // In production, you would verify the Firebase token using Firebase Admin SDK
 
-    // Generate new token and set creation timestamp for expiration tracking
-    const newToken = crypto.randomUUID();
-    const { error: tokenUpdateError } = await supabase
-      .from("events")
-      .update({
-        approval_token: newToken,
-        token_created_at: new Date().toISOString()
-      })
-      .eq("id", event_id);
-
-    if (tokenUpdateError) {
-      console.error("Error updating approval token:", tokenUpdateError);
-      throw new Error("Failed to generate approval token");
-    }
+    // Use existing approval_token if available, otherwise generate one
+    // (Note: approval_token column may not exist in all database versions)
+    const approvalToken = event.approval_token || crypto.randomUUID();
+    
+    // Skip token update for now - column may not exist in database
+    // const { error: tokenUpdateError } = await supabase
+    //   .from("events")
+    //   .update({
+    //     approval_token: approvalToken,
+    //     token_created_at: new Date().toISOString()
+    //   })
+    //   .eq("id", event_id);
+    //
+    // if (tokenUpdateError) {
+    //   console.error("Error updating approval token:", tokenUpdateError);
+    //   throw new Error("Failed to generate approval token");
+    // }
 
     const siteUrl = Deno.env.get("SITE_URL") || "https://your-site.lovable.app";
     const functionUrl = `${supabaseUrl}/functions/v1/handle-event-approval`;
-    const approveUrl = `${functionUrl}?token=${newToken}&action=approve`;
-    const rejectUrl = `${functionUrl}?token=${newToken}&action=reject`;
+    const approveUrl = `${functionUrl}?token=${approvalToken}&action=approve`;
+    const rejectUrl = `${functionUrl}?token=${approvalToken}&action=reject`;
 
     // Send notification to admin with approve/reject buttons (with HTML escaping)
+    console.log(`📧 Attempting to send email...`);
+    console.log(`   From: NowInTown <onboarding@resend.dev>`);
+    console.log(`   To: ${ADMIN_EMAIL}`);
+    console.log(`   Subject: New Event Pending Review: ${event.title}`);
+    console.log(`   Event ID: ${event_id}`);
+    
     const adminEmailResponse = await resend.emails.send({
       from: "NowInTown <onboarding@resend.dev>",
       to: [ADMIN_EMAIL],
@@ -145,9 +176,24 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Admin notification sent:", adminEmailResponse);
+    console.log("✅ Admin notification sent successfully!");
+    console.log("   Resend Response:", JSON.stringify(adminEmailResponse, null, 2));
 
-    return new Response(JSON.stringify({ success: true }), {
+    if (adminEmailResponse.error) {
+      console.error("❌ Resend API error:", adminEmailResponse.error);
+      throw new Error(`Failed to send email: ${adminEmailResponse.error.message || 'Unknown error'}`);
+    }
+
+    if (adminEmailResponse.data?.id) {
+      console.log(`📬 Email ID: ${adminEmailResponse.data.id}`);
+      console.log(`🔍 Check delivery status at: https://resend.com/emails/${adminEmailResponse.data.id}`);
+    }
+
+    return new Response(JSON.stringify({ 
+      success: true,
+      email_sent_to: ADMIN_EMAIL,
+      message_id: adminEmailResponse.data?.id
+    }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });

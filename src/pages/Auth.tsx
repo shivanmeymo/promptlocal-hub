@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 
 // Cloudflare Turnstile site key (public)
 // Note: this is safe to ship in frontend. Domain restrictions are enforced in Turnstile settings.
+// Production key for nowintown.se, can be overridden with VITE_TURNSTILE_SITE_KEY for localhost
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || "0x4AAAAAACKgQEPVM6HOoY9T";
 
 declare global {

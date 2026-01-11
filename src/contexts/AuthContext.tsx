@@ -8,6 +8,7 @@ import {
   signOut as firebaseSignOut,
   updatePassword as firebaseUpdatePassword,
   deleteUserAccount as firebaseDeleteAccount,
+  linkPasswordToAccount as firebaseLinkPassword,
   onAuthStateChange,
 } from '@/integrations/firebase/auth';
 import { syncUserProfile, deleteUserProfile } from '@/integrations/supabase/auth-sync';
@@ -29,6 +30,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updatePassword: (currentPassword: string, newPassword: string) => Promise<{ error: Error | null }>;
+  linkPassword: (password: string) => Promise<{ error: Error | null }>;
   deleteAccount: () => Promise<{ error: Error | null }>;
   refreshProfile: () => Promise<void>;
 }
@@ -146,6 +148,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const linkPassword = async (password: string) => {
+    try {
+      await firebaseLinkPassword(password);
+      return { error: null };
+    } catch (error) {
+      console.error('Link password error:', error);
+      return { error: error as Error };
+    }
+  };
+
   const deleteAccount = async () => {
     if (!user) return { error: new Error('No user logged in') };
 
@@ -184,6 +196,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         signInWithGoogle,
         signOut,
         updatePassword,
+        linkPassword,
         deleteAccount,
         refreshProfile,
       }}

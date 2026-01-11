@@ -115,24 +115,28 @@ const Index: React.FC = () => {
     fetchEvents();
   }, []);
 
-  // On first load, ask for location and set city filter + header city
+  // On first load, try to load saved city OR ask for location
   useEffect(() => {
     (async () => {
-      // Check if user already has a saved city
       try {
+        // Check if we have a recent city in localStorage (within last 24 hours)
         const savedCity = localStorage.getItem('nit_user_city');
-        if (savedCity) {
+        const savedTime = localStorage.getItem('nit_user_city_time');
+        const now = Date.now();
+        
+        // If city was saved less than 24 hours ago, use it without asking for location
+        if (savedCity && savedTime && (now - parseInt(savedTime)) < 24 * 60 * 60 * 1000) {
           console.log('💾 Using saved city from localStorage:', savedCity);
           setFilters(f => ({ ...f, location: savedCity }));
+          window.dispatchEvent(new CustomEvent('nit_city_updated', { detail: savedCity }));
           return;
         }
-      } catch {}
-
-      try {
-        console.log('🌍 Requesting geolocation...');
+        
+        // Otherwise, request fresh geolocation
+        console.log('🌍 Requesting fresh geolocation...');
         const coords = await getCurrentPosition();
         console.log('📍 Got coordinates:', coords);
-        const cities = ['Stockholm','Göteborg','Malmö','Umeå','Västerås','Uppsala'];
+        const cities = ['Stockholm','Göteborg','Malmö','Uppsala'];
         const { reverseGeocodeCity } = await import('@/lib/geo');
         const matched = await reverseGeocodeCity(coords, cities);
         console.log('🏙️ Matched city:', matched);
@@ -141,18 +145,20 @@ const Index: React.FC = () => {
           console.log('✅ Updated filters with location:', matched);
           try { 
             localStorage.setItem('nit_user_city', matched);
+            localStorage.setItem('nit_user_city_time', now.toString());
             window.dispatchEvent(new CustomEvent('nit_city_updated', { detail: matched }));
             console.log('💾 Saved to localStorage and dispatched event');
           } catch {}
-        } else {
-          // Geocoding failed or user not in one of the 6 cities
-          // Set a default city or let user select manually from filter
-          console.log('🤷 Could not match to a Swedish city. User can select manually from filter.');
         }
       } catch (err) {
-        console.log('❌ Geolocation error or denied:', err);
-        // User denied location or error occurred
-        // They can still select city manually from the filter dropdown
+        console.log('❌ Geolocation error:', err);
+        // Fallback to saved city if geolocation fails
+        const savedCity = localStorage.getItem('nit_user_city');
+        if (savedCity) {
+          console.log('🔄 Falling back to saved city:', savedCity);
+          setFilters(f => ({ ...f, location: savedCity }));
+          window.dispatchEvent(new CustomEvent('nit_city_updated', { detail: savedCity }));
+        }
       }
     })();
   }, []);

@@ -1,5 +1,5 @@
 import React, { useState, lazy, Suspense, useMemo } from 'react';
-import { Search, Calendar, Bell, X } from 'lucide-react';
+import { Search, Calendar, Bell, X, MapPin } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,9 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { getCurrentPosition, reverseGeocode } from '@/lib/geo';
-const LazyLocationAutocomplete = lazy(() =>
-  import('@/components/maps/LocationAutocomplete').then(m => ({ default: m.LocationAutocomplete }))
-);
+import { LocationDropdown } from '@/components/maps/LocationDropdown';
 
 interface EventFiltersProps {
   onSearchChange: (value: string) => void;
@@ -63,11 +61,11 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
 
   // Sync with external location changes
   React.useEffect(() => {
-    if (initialLocation && initialLocation !== selectedFilters.location) {
+    if (initialLocation) {
       console.log('🔄 EventFilters: Syncing location to:', initialLocation);
       setSelectedFilters(f => ({ ...f, location: initialLocation }));
     }
-  }, [initialLocation, selectedFilters.location]);
+  }, [initialLocation]);
   const [radiusKm, setRadiusKm] = useState<number>(25);
 
   const handleFreeOnlyChange = (checked: boolean) => {
@@ -230,28 +228,27 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
           </Select>
         </div>
 
-        {/* Location (Swedish cities) */}
+        {/* Location with Google Maps Autocomplete */}
         <div>
           <Label className="mb-2 block">
             {language === 'sv' ? 'Plats' : 'Location'}
           </Label>
-          <Select
-            onValueChange={(value) => {
-              setSelectedFilters(f => ({ ...f, location: value === 'all' ? '' : value }));
-              onLocationChange(value === 'all' ? '' : value);
+          <LocationDropdown
+            value={selectedFilters.location}
+            onChange={(value) => {
+              setSelectedFilters(f => ({ ...f, location: value }));
+              onLocationChange(value);
+              // Update localStorage when location changes
+              if (value) {
+                try {
+                  localStorage.setItem('nit_user_city', value);
+                  localStorage.setItem('nit_user_city_time', Date.now().toString());
+                  window.dispatchEvent(new CustomEvent('nit_city_updated', { detail: value }));
+                } catch {}
+              }
             }}
-            value={selectedFilters.location || 'all'}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={t('search.select')} />
-            </SelectTrigger>
-            <SelectContent className="bg-popover">
-              <SelectItem value="all">{language === 'sv' ? 'Alla städer' : 'All cities'}</SelectItem>
-              {['Stockholm','Göteborg','Malmö','Umeå','Västerås','Uppsala'].map((city) => (
-                <SelectItem key={city} value={city}>{city}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder={language === 'sv' ? 'Välj plats...' : 'Select location...'}
+          />
         </div>
 
         {/* Category */}
