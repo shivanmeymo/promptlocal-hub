@@ -1,13 +1,32 @@
-# Backend Switching Guide
+# Backend Architecture Guide
 
 ## Overview
 
-This application now supports switching between Firebase and Supabase backend providers with minimal code changes. The adapter pattern allows you to:
+This application uses a **hybrid backend architecture** that leverages the best features of both Firebase and Supabase:
 
-1. **Switch providers by changing one config file**
-2. **Run in hybrid mode** (e.g., Firebase auth + Supabase database)
-3. **Migrate incrementally** from one provider to another
-4. **Test different providers** without refactoring your entire codebase
+### 🔥 Firebase: Authentication & Google Ecosystem
+- **Authentication** - Industry-leading auth with Google OAuth
+- **Cloud Messaging** - Push notifications
+- **Why?** Best Google integration and mobile SDK support
+
+### ⚡ Supabase: Database, Storage & Functions
+- **PostgreSQL Database** - Powerful relational database
+- **Storage** - File and image storage
+- **Edge Functions** - Serverless functions (Deno runtime)
+- **Real-time** - Live data subscriptions
+- **Why?** Modern, open-source, full-stack platform
+
+## Architecture Principles
+
+⚠️ **IMPORTANT:** Firebase is **ONLY** used for authentication and Google ecosystem features. All data operations (database, storage, functions) use Supabase.
+
+### Why This Hybrid Approach?
+
+1. **Best-in-class Authentication** - Firebase Auth is unmatched for Google OAuth and authentication security
+2. **PostgreSQL Power** - Supabase provides a full PostgreSQL database with SQL capabilities
+3. **Cost Efficiency** - Supabase's generous free tier for database operations
+4. **Developer Experience** - Modern API with TypeScript support
+5. **Open Source** - Supabase is fully open-source and self-hostable
 
 ## Current Configuration
 
@@ -15,38 +34,74 @@ The backend configuration is centralized in [src/config/backend.ts](../src/confi
 
 ```typescript
 export const BACKEND_CONFIG = {
-  auth: 'firebase',      // Currently using Firebase for authentication
-  database: 'supabase',  // Currently using Supabase for database
-  storage: 'supabase',   // Currently using Supabase for storage
-  functions: 'supabase', // Currently using Supabase for edge functions
-  realtime: 'supabase',  // Currently using Supabase for realtime
+  auth: 'firebase',      // 🔥 Firebase for authentication (RECOMMENDED)
+  database: 'supabase',  // ⚡ Supabase for database (FIXED)
+  storage: 'supabase',   // ⚡ Supabase for storage (FIXED)
+  functions: 'supabase', // ⚡ Supabase for edge functions (FIXED)
+  realtime: 'supabase',  // ⚡ Supabase for realtime (FIXED)
 };
 ```
 
-## How to Switch Providers
+⚠️ **Note:** Database, storage, and functions are **locked to Supabase**. Switching these to Firebase is not supported and will throw errors.
 
-### 1. Authentication Provider
+## Firebase Integration Details
 
-**Switch from Firebase to Supabase Auth:**
+### What Firebase Provides
+
+1. **Authentication** ([src/integrations/firebase/auth.ts](../src/integrations/firebase/auth.ts))
+   - Email/Password authentication
+   - Google OAuth sign-in
+   - Password reset
+   - Account linking
+
+2. **Cloud Messaging** ([src/integrations/firebase/messaging.ts](../src/integrations/firebase/messaging.ts))
+   - Push notifications
+   - Foreground message handling
+   - FCM token management
+
+### What Firebase Does NOT Provide
+
+❌ Database operations (use Supabase)  
+❌ File storage (use Supabase)  
+❌ Serverless functions (use Supabase Edge Functions)  
+❌ Real-time subscriptions (use Supabase)
+
+## Authentication Flow
+
+### How It Works
+
+1. **User signs in** → Firebase Authentication
+2. **User authenticated** → Firebase returns user object
+3. **Profile sync** → User data synced to Supabase database
+4. **App operations** → All CRUD operations use Supabase
+
+### User Profile Sync
+
+```typescript
+// AuthContext automatically syncs Firebase users to Supabase
+const { error: syncError } = await syncUserProfile(
+  authUser.id,           // Firebase user ID
+  authUser.email,        // Firebase email
+  authUser.displayName,  // Firebase display name
+  authUser.photoURL      // Firebase photo URL
+);
+```
+
+## Switching Authentication Provider
+
+⚠️ **Not Recommended:** While technically possible, switching from Firebase to Supabase auth means losing:
+- Best-in-class Google OAuth integration
+- Firebase's robust security features
+- Cloud Messaging for push notifications
+
+If you must switch:
 
 ```typescript
 // In src/config/backend.ts
 export const BACKEND_CONFIG = {
-  auth: 'supabase',  // Changed from 'firebase'
+  auth: 'supabase',  // Switch to Supabase Auth
   // ...
 };
-```
-
-Then use the adapter in your code:
-
-```typescript
-// Instead of direct Firebase imports
-import { getAuthAdapter } from '@/adapters/factory';
-
-const auth = getAuthAdapter();
-
-// All methods work the same regardless of provider
-const { user, error } = await auth.signIn(email, password);
 ```
 
 ### 2. Database Provider

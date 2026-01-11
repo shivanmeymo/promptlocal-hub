@@ -1,6 +1,17 @@
 /**
  * Firebase Authentication Adapter
  * Implements IAuthAdapter interface for Firebase Auth
+ * 
+ * PURPOSE: Firebase is used EXCLUSIVELY for authentication in this app.
+ * 
+ * Why Firebase Auth?
+ * ✅ Best-in-class Google OAuth integration
+ * ✅ Robust authentication security
+ * ✅ Excellent mobile SDK support
+ * ✅ Cloud Messaging for push notifications
+ * 
+ * Note: All other services (database, storage, functions) use Supabase.
+ * User profiles from Firebase are automatically synced to Supabase database.
  */
 
 import type { IAuthAdapter, AuthUser, AuthError, AuthStateCallback } from '../interfaces';

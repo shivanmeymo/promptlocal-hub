@@ -2,7 +2,14 @@
  * Backend Factory
  * 
  * Returns the appropriate adapter based on configuration.
- * This is the single point where you choose your backend provider.
+ * 
+ * ARCHITECTURE:
+ * - Firebase: Authentication + Google ecosystem (OAuth, Cloud Messaging)
+ * - Supabase: Database, Storage, Functions, Real-time
+ * 
+ * This hybrid approach leverages the best of both platforms:
+ * ✅ Firebase Auth: Industry-leading authentication with Google OAuth
+ * ✅ Supabase: Modern PostgreSQL database with real-time capabilities
  */
 
 import { BACKEND_CONFIG } from '@/config/backend';
@@ -29,6 +36,8 @@ let functionsAdapter: IFunctionsAdapter | null = null;
 
 /**
  * Get Auth Adapter based on configuration
+ * 
+ * Default: Firebase (recommended for Google OAuth and authentication)
  */
 export function getAuthAdapter(): IAuthAdapter {
   if (!authAdapter) {
@@ -44,12 +53,17 @@ export function getAuthAdapter(): IAuthAdapter {
 
 /**
  * Get Database Adapter based on configuration
+ * 
+ * Default: Supabase (PostgreSQL database)
+ * Note: Firebase Firestore adapter not implemented (not needed for this app)
  */
 export function getDatabaseAdapter(): IDatabaseAdapter {
   if (!databaseAdapter) {
     if (BACKEND_CONFIG.database === 'firebase') {
-      // TODO: Implement FirebaseDatabaseAdapter (Firestore)
-      throw new Error('Firebase Database adapter not yet implemented. Currently only Supabase is supported.');
+      throw new Error(
+        'Firebase Database is not supported. This app uses Supabase for database. ' +
+        'Firebase is only for authentication and Google ecosystem features.'
+      );
     } else {
       databaseAdapter = new SupabaseDatabaseAdapter();
     }
@@ -60,12 +74,17 @@ export function getDatabaseAdapter(): IDatabaseAdapter {
 
 /**
  * Get Storage Adapter based on configuration
+ * 
+ * Default: Supabase (file storage for images, etc.)
+ * Note: Firebase Storage adapter not implemented (not needed for this app)
  */
 export function getStorageAdapter(): IStorageAdapter {
   if (!storageAdapter) {
     if (BACKEND_CONFIG.storage === 'firebase') {
-      // TODO: Implement FirebaseStorageAdapter
-      throw new Error('Firebase Storage adapter not yet implemented. Currently only Supabase is supported.');
+      throw new Error(
+        'Firebase Storage is not supported. This app uses Supabase for storage. ' +
+        'Firebase is only for authentication and Google ecosystem features.'
+      );
     } else {
       storageAdapter = new SupabaseStorageAdapter();
     }
@@ -76,12 +95,17 @@ export function getStorageAdapter(): IStorageAdapter {
 
 /**
  * Get Functions Adapter based on configuration
+ * 
+ * Default: Supabase (Edge Functions with Deno runtime)
+ * Note: Firebase Cloud Functions adapter not implemented (not needed for this app)
  */
 export function getFunctionsAdapter(): IFunctionsAdapter {
   if (!functionsAdapter) {
     if (BACKEND_CONFIG.functions === 'firebase') {
-      // TODO: Implement FirebaseFunctionsAdapter
-      throw new Error('Firebase Functions adapter not yet implemented. Currently only Supabase is supported.');
+      throw new Error(
+        'Firebase Functions are not supported. This app uses Supabase Edge Functions. ' +
+        'Firebase is only for authentication and Google ecosystem features.'
+      );
     } else {
       functionsAdapter = new SupabaseFunctionsAdapter();
     }
@@ -92,10 +116,15 @@ export function getFunctionsAdapter(): IFunctionsAdapter {
 
 /**
  * Get Realtime Adapter based on configuration
+ * 
+ * Default: Supabase (real-time subscriptions)
+ * Note: Firebase Realtime Database adapter not implemented (not needed for this app)
  */
 export function getRealtimeAdapter(): IRealtimeAdapter {
-  // TODO: Implement realtime adapters for both providers
-  throw new Error('Realtime adapter not yet implemented.');
+  throw new Error(
+    'Realtime adapter not yet implemented. ' +
+    'When implemented, it will use Supabase for real-time features.'
+  );
 }
 
 /**
