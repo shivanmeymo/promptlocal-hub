@@ -142,7 +142,7 @@ const Profile: React.FC = () => {
     const { error } = await supabase
       .from('profiles')
       .update({ full_name: fullName })
-      .eq('user_id', user.id);
+      .eq('user_id', user.uid);
 
     if (error) {
       toast({

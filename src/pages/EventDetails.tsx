@@ -48,7 +48,7 @@ const EventDetails: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  const isOwner = user && event && user.id === event.user_id;
+  const isOwner = user && event && user.uid === event.user_id;
 
   useEffect(() => {
     if (!id) return;
