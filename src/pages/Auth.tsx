@@ -15,8 +15,13 @@ import { useToast } from '@/hooks/use-toast';
 
 // Cloudflare Turnstile site key (public)
 // Note: this is safe to ship in frontend. Domain restrictions are enforced in Turnstile settings.
-// Production key for nowintown.se, can be overridden with VITE_TURNSTILE_SITE_KEY for localhost
-const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || "0x4AAAAAACKgQEPVM6HOoY9T";
+// Production key for nowintown.se - use testing key for non-production domains
+const isProductionDomain = typeof window !== 'undefined' && 
+  (window.location.hostname === 'nowintown.se' || window.location.hostname === 'www.nowintown.se');
+// Use real key for production, visible testing key for development/preview
+const TURNSTILE_SITE_KEY = isProductionDomain 
+  ? "0x4AAAAAACKgQEPVM6HOoY9T" 
+  : "1x00000000000000000000AA"; // Cloudflare visible testing key - always passes
 
 declare global {
   interface Window {
