@@ -11,7 +11,7 @@ import { BackButton } from '@/components/BackButton';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { getDatabaseAdapter } from '@/adapters/factory';
 
 interface Event {
   id: string;
@@ -50,11 +50,8 @@ const ManageEvents: React.FC = () => {
     if (!user) return;
     
     setLoading(true);
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .eq('user_id', user.uid)
-      .order('created_at', { ascending: false });
+    const dbAdapter = getDatabaseAdapter();
+    const { data, error } = await dbAdapter.getEvents({ userId: user.id });
 
     if (!error && data) {
       setEvents(data as Event[]);
@@ -63,10 +60,8 @@ const ManageEvents: React.FC = () => {
   };
 
   const handleDelete = async (eventId: string) => {
-    const { error } = await supabase
-      .from('events')
-      .delete()
-      .eq('id', eventId);
+    const dbAdapter = getDatabaseAdapter();
+    const { error } = await dbAdapter.deleteEvent(eventId);
 
     if (error) {
       toast({

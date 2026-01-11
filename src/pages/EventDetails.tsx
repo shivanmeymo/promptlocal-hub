@@ -14,7 +14,7 @@ import { ExternalLink } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { getDatabaseAdapter } from '@/adapters/factory';
 import { getCategoryColor, formatDateLong, formatTime } from '@/lib/format';
 
 interface Event {
@@ -48,16 +48,14 @@ const EventDetails: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  const isOwner = user && event && user.uid === event.user_id;
+  const isOwner = user && event && user.id === event.user_id;
 
   useEffect(() => {
     if (!id) return;
     
-    supabase
-      .from('events')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle()
+    const dbAdapter = getDatabaseAdapter();
+    dbAdapter
+      .getEvent(id)
       .then(({ data, error }) => {
         if (error || !data) {
           toast({

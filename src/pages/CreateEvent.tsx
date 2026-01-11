@@ -19,7 +19,7 @@ const LazyLocationAutocomplete = lazy(() =>
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { getDatabaseAdapter, getStorageAdapter, getFunctionsAdapter, getAuthAdapter } from '@/adapters/factory';
 
 const categories = ['music', 'sports', 'art', 'tech', 'business', 'education', 'health', 'community', 'other'] as const;
 
@@ -135,11 +135,22 @@ const CreateEvent: React.FC = () => {
         return;
       }
 
-      // Get the Firebase ID token
-      const token = await user.getIdToken();
-      console.log("🔑 Firebase token obtained, length:", token.length);
-      console.log("🔑 Token preview:", token.substring(0, 50) + "...");
-      console.log("🔑 Token has 3 parts:", token.split('.').length === 3);
+      // Get the Firebase ID token (Firebase-specific feature)
+      const authAdapter = getAuthAdapter() as any; // Cast to access Firebase-specific methods
+      if (!authAdapter.getIdToken) {
+        toast({
+          title: t('common.error'),
+          description: 'Token generation not supported by current auth provider',
+          variant: 'destructive',
+        });
+        setAiLoading(false);
+        return;
+      }
+      
+      const token = await authAdapter.getIdToken();
+      console.log("🔑 Firebase token obtained, length:", token?.length);
+      console.log("🔑 Token preview:", token?.substring(0, 50) + "...");
+      console.log("🔑 Token has 3 parts:", token?.split('.').length === 3);
       
       // Try to decode locally to see what's in it
       try {
@@ -154,7 +165,8 @@ const CreateEvent: React.FC = () => {
       }
 
       // Server handles authentication and atomic rate limiting
-      const { data, error } = await supabase.functions.invoke('generate-event-description', {
+      const functionsAdapter = getFunctionsAdapter();
+      const { data, error } = await functionsAdapter.invoke('generate-event-description', {
         body: {
           title: formData.title,
           category: formData.category === 'other' ? formData.otherCategory : formData.category,
@@ -250,25 +262,22 @@ const CreateEvent: React.FC = () => {
 
       // Upload image if selected
       if (imageFile) {
+        const storageAdapter = getStorageAdapter();
         const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${user.uid}/${Date.now()}.${fileExt}`;
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
         
-        const { error: uploadError } = await supabase.storage
-          .from('event-images')
-          .upload(fileName, imageFile);
+        const { error: uploadError } = await storageAdapter.upload(fileName, imageFile, { bucket: 'event-images' });
 
         if (uploadError) {
           console.error('Image upload error:', uploadError);
         } else {
-          const { data: { publicUrl } } = supabase.storage
-            .from('event-images')
-            .getPublicUrl(fileName);
-          imageUrl = publicUrl;
+          imageUrl = storageAdapter.getPublicUrl(fileName, { bucket: 'event-images' });
         }
       }
 
-      const { data: eventData, error } = await supabase.from('events').insert([{
-        user_id: user.uid,
+      const dbAdapter = getDatabaseAdapter();
+      const { data: eventData, error } = await dbAdapter.createEvent({
+        user_id: user.id,
         organizer_name: formData.organizerName,
         organizer_email: formData.organizerEmail,
         organizer_description: formData.organizerDescription || null,
@@ -289,7 +298,7 @@ const CreateEvent: React.FC = () => {
         recurring_pattern: formData.isRecurring ? formData.recurringPattern : null,
         image_url: imageUrl,
         status: 'pending' as const,
-      }]).select().single();
+      });
 
       if (error) throw error;
       if (!eventData) throw new Error('Event creation failed - no data returned');
@@ -297,24 +306,15 @@ const CreateEvent: React.FC = () => {
       console.log('✅ Event created successfully with ID:', eventData.id);
 
       // Notify admin about new event (runs in background, don't block UI)
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const functionsAdapter = getFunctionsAdapter();
       
-      fetch(`${supabaseUrl}/functions/v1/notify-admin-new-event`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': anonKey,
-          'Authorization': `Bearer ${anonKey}`,
-        },
-        body: JSON.stringify({ event_id: eventData.id }),
-      }).then(async response => {
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('❌ Email notification failed:', response.status, errorText);
+      functionsAdapter.invoke('notify-admin-new-event', {
+        body: { event_id: eventData.id },
+      }).then(({ data, error: emailError }) => {
+        if (emailError) {
+          console.error('❌ Email notification failed:', emailError);
         } else {
-          const result = await response.json();
-          console.log('✅ Email notification sent:', result);
+          console.log('✅ Email notification sent:', data);
         }
       }).catch(emailError => {
         console.error('❌ Failed to notify admin:', emailError);

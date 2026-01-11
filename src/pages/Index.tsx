@@ -9,7 +9,7 @@ import { EventCard } from '@/components/events/EventCard';
 import { EventFilters } from '@/components/events/EventFilters';
 
 import { useLanguage } from '@/contexts/LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
+import { getDatabaseAdapter } from '@/adapters/factory';
 
 interface Event {
   id: string;
@@ -55,17 +55,14 @@ const Index: React.FC = () => {
     const fetchEvents = async () => {
       setLoading(true);
       
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .eq('status', 'approved')
-        .order('start_date', { ascending: true });
+      const dbAdapter = getDatabaseAdapter();
+      const { data, error } = await dbAdapter.getEvents({ status: 'approved' });
 
       if (error) {
         console.error('Error fetching events:', error);
       }
 
-      setEvents(data || []);
+      setEvents((data as any) || []);
       setLoading(false);
     };
 

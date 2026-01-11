@@ -73,7 +73,7 @@ export const Navbar: React.FC = () => {
     supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.uid)
+      .eq('user_id', user.id)
       .eq('role', 'admin')
       .maybeSingle()
       .then(({ data }) => setIsAdmin(!!data));

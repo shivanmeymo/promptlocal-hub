@@ -1,16 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User as FirebaseUser } from 'firebase/auth';
-import { supabase } from '@/integrations/supabase/client';
-import {
-  signUpWithEmail,
-  signInWithEmail,
-  signInWithGoogle as firebaseSignInWithGoogle,
-  signOut as firebaseSignOut,
-  updatePassword as firebaseUpdatePassword,
-  deleteUserAccount as firebaseDeleteAccount,
-  linkPasswordToAccount as firebaseLinkPassword,
-  onAuthStateChange,
-} from '@/integrations/firebase/auth';
+import { getAuthAdapter, getDatabaseAdapter } from '@/adapters/factory';
+import type { AuthUser } from '@/adapters/interfaces';
 import { syncUserProfile, deleteUserProfile } from '@/integrations/supabase/auth-sync';
 
 interface Profile {
@@ -22,7 +12,7 @@ interface Profile {
 }
 
 interface AuthContextType {
-  user: FirebaseUser | null;
+  user: AuthUser | null;
   profile: Profile | null;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
@@ -38,16 +28,16 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Get adapters
+  const authAdapter = getAuthAdapter();
+  const dbAdapter = getDatabaseAdapter();
 
   const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
+    const { data, error } = await dbAdapter.getProfile(userId);
 
     if (!error && data) {
       setProfile(data);
@@ -55,27 +45,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   useEffect(() => {
-    // Listen to Firebase Auth state changes
-    const unsubscribe = onAuthStateChange(async (firebaseUser) => {
-      setUser(firebaseUser);
+    // Listen to auth state changes using adapter
+    const unsubscribe = authAdapter.onAuthStateChanged(async (authUser) => {
+      setUser(authUser);
       
-      if (firebaseUser) {
-        console.log('👤 Firebase user authenticated:', firebaseUser.email);
+      if (authUser) {
+        console.log('👤 User authenticated:', authUser.email);
         
-        // Sync Firebase user with Supabase profile
+        // Sync user with Supabase profile
         const { error: syncError } = await syncUserProfile(
-          firebaseUser.uid,
-          firebaseUser.email || '',
-          firebaseUser.displayName,
-          firebaseUser.photoURL
+          authUser.id,
+          authUser.email || '',
+          authUser.displayName,
+          authUser.photoURL
         );
         
         if (syncError) {
           console.error('Failed to sync user profile to Supabase:', syncError);
         }
         
-        // Fetch profile from Supabase
-        await fetchProfile(firebaseUser.uid);
+        // Fetch profile from database
+        await fetchProfile(authUser.id);
       } else {
         setProfile(null);
       }
@@ -87,44 +77,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    try {
-      // Sign up with Firebase
-      await signUpWithEmail(email, password, fullName);
-      return { error: null };
-    } catch (error) {
-      console.error('Sign up error:', error);
-      return { error: error as Error };
-    }
+    const { error } = await authAdapter.signUp(email, password, { displayName: fullName });
+    return { error: error ? new Error(error.message) : null };
   };
 
   const signIn = async (email: string, password: string) => {
-    try {
-      // Sign in with Firebase
-      await signInWithEmail(email, password);
-      return { error: null };
-    } catch (error) {
-      console.error('Sign in error:', error);
-      return { error: error as Error };
-    }
+    const { error } = await authAdapter.signIn(email, password);
+    return { error: error ? new Error(error.message) : null };
   };
 
   const signInWithGoogle = async () => {
-    try {
-      // Sign in with Google via Firebase
-      await firebaseSignInWithGoogle();
-      return { error: null };
-    } catch (error) {
-      console.error('Google sign in error:', error);
-      return { error: error as Error };
-    }
+    const { error } = await authAdapter.signInWithGoogle();
+    return { error: error ? new Error(error.message) : null };
   };
 
   const signOut = async () => {
-    try {
-      await firebaseSignOut();
+    const { error } = await authAdapter.signOut();
+    if (!error) {
       setUser(null);
       setProfile(null);
-    } catch (error) {
+    } else {
       console.error('Sign out error:', error);
     }
   };
@@ -136,12 +108,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     try {
       // Verify current password by re-authenticating
-      await signInWithEmail(user.email, currentPassword);
+      const { error: signInError } = await authAdapter.signIn(user.email, currentPassword);
+      if (signInError) {
+        return { error: new Error('Current password is incorrect') };
+      }
       
       // Update to new password
-      await firebaseUpdatePassword(newPassword);
+      const { error } = await authAdapter.updatePassword(newPassword);
       
-      return { error: null };
+      return { error: error ? new Error(error.message) : null };
     } catch (error) {
       console.error('Update password error:', error);
       return { error: new Error('Current password is incorrect or failed to update') };
@@ -149,30 +124,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const linkPassword = async (password: string) => {
-    try {
-      await firebaseLinkPassword(password);
-      return { error: null };
-    } catch (error) {
-      console.error('Link password error:', error);
-      return { error: error as Error };
-    }
+    const { error } = await authAdapter.linkPassword(password);
+    return { error: error ? new Error(error.message) : null };
   };
 
   const deleteAccount = async () => {
     if (!user) return { error: new Error('No user logged in') };
 
     try {
-      // Delete user profile from Supabase first
-      await deleteUserProfile(user.uid);
+      // Delete user profile from database first
+      await deleteUserProfile(user.id);
       
-      // Delete Firebase account
-      await firebaseDeleteAccount();
+      // Delete account using adapter
+      const { error } = await authAdapter.deleteAccount();
 
-      // Clear local state
-      setUser(null);
-      setProfile(null);
+      if (!error) {
+        // Clear local state
+        setUser(null);
+        setProfile(null);
+      }
 
-      return { error: null };
+      return { error: error ? new Error(error.message) : null };
     } catch (err) {
       console.error('Error deleting account:', err);
       return { error: err as Error };
@@ -181,7 +153,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const refreshProfile = async () => {
     if (user) {
-      await fetchProfile(user.uid);
+      await fetchProfile(user.id);
     }
   };
 

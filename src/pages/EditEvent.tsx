@@ -19,7 +19,7 @@ const LazyLocationAutocomplete = lazy(() =>
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { getDatabaseAdapter, getStorageAdapter } from '@/adapters/factory';
 
 const categories = ['music', 'sports', 'art', 'tech', 'business', 'education', 'health', 'community', 'other'] as const;
 
@@ -69,11 +69,8 @@ const EditEvent: React.FC = () => {
   }, [user, id, navigate]);
 
   const fetchEvent = async () => {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const dbAdapter = getDatabaseAdapter();
+    const { data, error } = await dbAdapter.getEvent(id!);
 
     if (error || !data) {
       toast({
@@ -86,17 +83,16 @@ const EditEvent: React.FC = () => {
     }
 
     // Check if user is admin
-    const { data: adminData } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user?.uid)
-      .eq('role', 'admin')
-      .maybeSingle();
+    const { data: adminData } = await dbAdapter.query('user_roles', {
+      select: 'role',
+      filters: { user_id: user?.id, role: 'admin' },
+      limit: 1,
+    });
 
-    const isAdmin = !!adminData;
+    const isAdmin = adminData && adminData.length > 0;
 
     // Check ownership or admin status
-    if (data.user_id !== user?.uid && !isAdmin) {
+    if (data.user_id !== user?.id && !isAdmin) {
       toast({
         title: t('common.error'),
         description: language === 'sv' ? 'Du har inte behörighet att redigera detta event' : 'You do not have permission to edit this event',
@@ -118,7 +114,7 @@ const EditEvent: React.FC = () => {
       endDate: data.end_date || '',
       endTime: data.end_time || '',
       location: data.location || '',
-      category: data.category || '',
+      category: (data.category as any) || '',
       otherCategory: data.other_category || '',
       isFree: data.is_free ?? true,
       price: data.price?.toString() || '',
@@ -193,22 +189,19 @@ const EditEvent: React.FC = () => {
       let imageUrl = formData.imageUrl;
 
       if (imageFile) {
+        const storageAdapter = getStorageAdapter();
         const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${user.uid}/${Date.now()}.${fileExt}`;
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
         
-        const { error: uploadError } = await supabase.storage
-          .from('event-images')
-          .upload(fileName, imageFile);
+        const { error: uploadError } = await storageAdapter.upload(fileName, imageFile, { bucket: 'event-images' });
 
         if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage
-            .from('event-images')
-            .getPublicUrl(fileName);
-          imageUrl = publicUrl;
+          imageUrl = storageAdapter.getPublicUrl(fileName, { bucket: 'event-images' });
         }
       }
 
-      const { error } = await supabase.from('events').update({
+      const dbAdapter = getDatabaseAdapter();
+      const { error } = await dbAdapter.updateEvent(id, {
         organizer_name: formData.organizerName,
         organizer_email: formData.organizerEmail,
         organizer_description: formData.organizerDescription || null,
@@ -228,7 +221,7 @@ const EditEvent: React.FC = () => {
         is_recurring: formData.isRecurring,
         recurring_pattern: formData.isRecurring ? formData.recurringPattern : null,
         image_url: imageUrl || null,
-      }).eq('id', id);
+      });
 
       if (error) throw error;
 

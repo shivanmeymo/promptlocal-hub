@@ -5,46 +5,142 @@
  * This allows switching providers with minimal code changes.
  */
 
+// Generic types
+export interface AuthUser {
+  id: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  emailVerified: boolean;
+  providerData: any[];
+}
+
+export interface AuthError {
+  code: string;
+  message: string;
+}
+
+export interface DatabaseError {
+  code: string;
+  message: string;
+  details?: string;
+}
+
+export interface StorageError {
+  code: string;
+  message: string;
+}
+
+export interface FunctionsError {
+  code: string;
+  message: string;
+}
+
+export type AuthStateCallback = (user: AuthUser | null) => void;
+
+export interface QueryOptions {
+  select?: string;
+  filters?: Record<string, any>;
+  orderBy?: { column: string; ascending?: boolean };
+  limit?: number;
+}
+
+export interface Event {
+  id?: string;
+  user_id?: string;
+  title?: string;
+  description?: string;
+  start_date?: string;
+  start_time?: string;
+  end_date?: string;
+  end_time?: string;
+  location?: string;
+  category?: string;
+  other_category?: string | null;
+  is_free?: boolean;
+  price?: number | null;
+  is_online?: boolean;
+  is_recurring?: boolean;
+  recurring_pattern?: string | null;
+  image_url?: string | null;
+  status?: string;
+  organizer_name?: string;
+  organizer_email?: string;
+  organizer_description?: string | null;
+  organizer_website?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  approved_at?: string | null;
+  approved_by?: string | null;
+  admin_notes?: string | null;
+}
+
+export interface Profile {
+  id?: string;
+  user_id?: string;
+  full_name?: string | null;
+  email?: string | null;
+  avatar_url?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
 // Auth Adapter Interface
 export interface IAuthAdapter {
-  signIn(email: string, password: string): Promise<{ user: any; error?: any }>;
-  signUp(email: string, password: string): Promise<{ user: any; error?: any }>;
-  signOut(): Promise<void>;
-  getCurrentUser(): any | null;
-  onAuthStateChanged(callback: (user: any | null) => void): () => void;
-  sendPasswordResetEmail(email: string): Promise<void>;
+  signUp(email: string, password: string, metadata?: { displayName?: string }): Promise<{ user: AuthUser | null; error: AuthError | null }>;
+  signIn(email: string, password: string): Promise<{ user: AuthUser | null; error: AuthError | null }>;
+  signInWithGoogle(): Promise<{ user: AuthUser | null; error: AuthError | null }>;
+  signOut(): Promise<{ error: AuthError | null }>;
+  getCurrentUser(): AuthUser | null;
+  onAuthStateChanged(callback: AuthStateCallback): () => void;
+  sendPasswordResetEmail(email: string): Promise<{ error: AuthError | null }>;
+  updatePassword(newPassword: string): Promise<{ error: AuthError | null }>;
+  linkPassword(password: string): Promise<{ error: AuthError | null }>;
+  deleteAccount(): Promise<{ error: AuthError | null }>;
 }
 
 // Database Adapter Interface
 export interface IDatabaseAdapter {
   // Events
-  getEvents(filters?: any): Promise<any[]>;
-  getEvent(id: string): Promise<any>;
-  createEvent(data: any): Promise<any>;
-  updateEvent(id: string, data: any): Promise<any>;
-  deleteEvent(id: string): Promise<void>;
+  getEvents(options?: {
+    userId?: string;
+    status?: string;
+    category?: string;
+    limit?: number;
+  }): Promise<{ data: Event[] | null; error: DatabaseError | null }>;
+  getEvent(id: string): Promise<{ data: Event | null; error: DatabaseError | null }>;
+  createEvent(event: Partial<Event>): Promise<{ data: Event | null; error: DatabaseError | null }>;
+  updateEvent(id: string, updates: Partial<Event>): Promise<{ data: Event | null; error: DatabaseError | null }>;
+  deleteEvent(id: string): Promise<{ error: DatabaseError | null }>;
   
   // Profiles
-  getProfile(userId: string): Promise<any>;
-  updateProfile(userId: string, data: any): Promise<any>;
+  getProfile(userId: string): Promise<{ data: Profile | null; error: DatabaseError | null }>;
+  updateProfile(userId: string, updates: Partial<Profile>): Promise<{ data: Profile | null; error: DatabaseError | null }>;
   
-  // Generic query
-  query(table: string, filters?: any): Promise<any[]>;
-  insert(table: string, data: any): Promise<any>;
-  update(table: string, id: string, data: any): Promise<any>;
-  delete(table: string, id: string): Promise<void>;
+  // Generic methods
+  query<T = any>(table: string, options?: QueryOptions): Promise<{ data: T[] | null; error: DatabaseError | null }>;
+  insert<T = any>(table: string, data: Partial<T> | Partial<T>[]): Promise<{ data: T | T[] | null; error: DatabaseError | null }>;
+  update<T = any>(table: string, filters: Record<string, any>, updates: Partial<T>): Promise<{ data: T[] | null; error: DatabaseError | null }>;
+  delete(table: string, filters: Record<string, any>): Promise<{ error: DatabaseError | null }>;
 }
 
 // Storage Adapter Interface
 export interface IStorageAdapter {
-  upload(bucket: string, path: string, file: File): Promise<{ url: string; error?: any }>;
-  getPublicUrl(bucket: string, path: string): string;
-  delete(bucket: string, path: string): Promise<void>;
+  upload(path: string, file: File, options?: { bucket?: string; contentType?: string }): Promise<{ data: { path: string } | null; error: StorageError | null }>;
+  getPublicUrl(path: string, options?: { bucket?: string }): string;
+  delete(path: string, options?: { bucket?: string }): Promise<{ error: StorageError | null }>;
 }
 
 // Functions Adapter Interface
 export interface IFunctionsAdapter {
-  invoke(functionName: string, data: any): Promise<{ data?: any; error?: any }>;
+  invoke<TRequest = any, TResponse = any>(
+    functionName: string,
+    options?: {
+      body?: TRequest;
+      headers?: Record<string, string>;
+      method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+    }
+  ): Promise<{ data: TResponse | null; error: FunctionsError | null }>;
 }
 
 // Realtime Adapter Interface

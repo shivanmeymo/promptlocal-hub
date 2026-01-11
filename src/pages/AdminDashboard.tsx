@@ -15,7 +15,7 @@ import { Layout } from '@/components/layout/Layout';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { getDatabaseAdapter, getFunctionsAdapter } from '@/adapters/factory';
 
 interface Event {
   id: string;
@@ -72,14 +72,14 @@ const AdminDashboard: React.FC = () => {
   const checkAdminRole = async () => {
     if (!user) return;
     
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.uid)
-      .eq('role', 'admin')
-      .maybeSingle();
+    const dbAdapter = getDatabaseAdapter();
+    const { data, error } = await dbAdapter.query('user_roles', {
+      select: 'role',
+      filters: { user_id: user.id, role: 'admin' },
+      limit: 1,
+    });
 
-    if (error || !data) {
+    if (error || !data || data.length === 0) {
       toast({
         title: language === 'sv' ? 'Åtkomst nekad' : 'Access Denied',
         description: language === 'sv' ? 'Du har inte behörighet att visa denna sida.' : 'You do not have permission to view this page.',
@@ -94,10 +94,10 @@ const AdminDashboard: React.FC = () => {
   };
 
   const fetchEvents = async () => {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const dbAdapter = getDatabaseAdapter();
+    const { data, error } = await dbAdapter.query<Event>('events', {
+      orderBy: { column: 'created_at', ascending: false },
+    });
 
     if (error) {
       toast({
@@ -126,16 +126,15 @@ const AdminDashboard: React.FC = () => {
     }).length;
 
     // Get total users count
-    const { count: usersCount } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true });
+    const dbAdapter = getDatabaseAdapter();
+    const { data: profilesData } = await dbAdapter.query('profiles', { select: 'id' });
 
     setStats({
       totalEvents: eventsData.length,
       pendingEvents: pending,
       approvedEvents: approved,
       rejectedEvents: rejected,
-      totalUsers: usersCount || 0,
+      totalUsers: profilesData?.length || 0,
       eventsThisMonth: thisMonthEvents,
     });
   };
@@ -146,15 +145,13 @@ const AdminDashboard: React.FC = () => {
 
     const newStatus = action === 'approve' ? 'approved' : 'rejected';
     
-    const { error } = await supabase
-      .from('events')
-      .update({
-        status: newStatus,
-        admin_notes: adminNotes || null,
-        approved_at: action === 'approve' ? new Date().toISOString() : null,
-        approved_by: action === 'approve' ? user?.uid : null,
-      })
-      .eq('id', selectedEvent.id);
+    const dbAdapter = getDatabaseAdapter();
+    const { error } = await dbAdapter.updateEvent(selectedEvent.id, {
+      status: newStatus,
+      admin_notes: adminNotes || null,
+      approved_at: action === 'approve' ? new Date().toISOString() : null,
+      approved_by: action === 'approve' ? user?.id : null,
+    });
 
     if (error) {
       toast({
@@ -164,21 +161,14 @@ const AdminDashboard: React.FC = () => {
       });
     } else {
       try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const functionsAdapter = getFunctionsAdapter();
         
-        await fetch(`${supabaseUrl}/functions/v1/send-event-approval-notification`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': anonKey,
-            'Authorization': `Bearer ${anonKey}`,
-          },
-          body: JSON.stringify({
+        await functionsAdapter.invoke('send-event-approval-notification', {
+          body: {
             event_id: selectedEvent.id,
             status: newStatus,
             admin_notes: adminNotes,
-          }),
+          },
         });
       } catch (emailError) {
         console.error('Failed to send email notification:', emailError);

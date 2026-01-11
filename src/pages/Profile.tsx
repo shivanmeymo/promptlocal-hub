@@ -13,7 +13,7 @@ import { Layout } from '@/components/layout/Layout';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { getDatabaseAdapter, getAuthAdapter } from '@/adapters/factory';
 
 const Profile: React.FC = () => {
   const { t, language } = useLanguage();
@@ -111,9 +111,8 @@ const Profile: React.FC = () => {
     
     setResetLinkLoading(true);
     
-    const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-      redirectTo: `${window.location.origin}/profile`,
-    });
+    const authAdapter = getAuthAdapter();
+    const { error } = await authAdapter.sendPasswordResetEmail(user.email);
 
     if (error) {
       toast({
@@ -139,10 +138,8 @@ const Profile: React.FC = () => {
 
     setProfileLoading(true);
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({ full_name: fullName })
-      .eq('user_id', user.uid);
+    const dbAdapter = getDatabaseAdapter();
+    const { error } = await dbAdapter.updateProfile(user.id, { full_name: fullName });
 
     if (error) {
       toast({

@@ -14,7 +14,7 @@ export const FirebaseSupabaseTest = () => {
       results.push({
         test: 'Firebase Auth',
         status: user ? '✅' : '❌',
-        data: user ? { uid: user.uid, email: user.email } : null
+        data: user ? { id: user.id, email: user.email } : null
       });
 
       // Test 2: Check Supabase connection
@@ -39,7 +39,7 @@ export const FirebaseSupabaseTest = () => {
           const { data, error } = await supabase
             .from('profiles')
             .select('*')
-            .eq('user_id', user.uid)
+            .eq('user_id', user.id)
             .maybeSingle();
           
           results.push({
