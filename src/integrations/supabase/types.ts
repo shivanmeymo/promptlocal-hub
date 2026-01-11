@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_usage: {
+        Row: {
+          created_at: string
+          id: string
+          usage_count: number
+          usage_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          usage_count?: number
+          usage_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          usage_count?: number
+          usage_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       contact_messages: {
         Row: {
           category: string | null
@@ -99,7 +123,7 @@ export type Database = {
           status: Database["public"]["Enums"]["event_status"]
           title: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           admin_notes?: string | null
@@ -128,7 +152,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["event_status"]
           title: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           admin_notes?: string | null
@@ -157,85 +181,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["event_status"]
           title?: string
           updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      events_public: {
-        Row: {
-          approved_at: string | null
-          category: Database["public"]["Enums"]["event_category"]
-          created_at: string
-          description: string
-          end_date: string
-          end_time: string
-          id: string
-          image_url: string | null
-          is_free: boolean
-          is_online: boolean | null
-          location: string
-          organizer_description: string | null
-          organizer_name: string
-          organizer_website: string | null
-          other_category: string | null
-          price: number | null
-          source: string | null
-          source_url: string | null
-          start_date: string
-          start_time: string
-          status: Database["public"]["Enums"]["event_status"]
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          approved_at?: string | null
-          category?: Database["public"]["Enums"]["event_category"]
-          created_at?: string
-          description: string
-          end_date: string
-          end_time: string
-          id: string
-          image_url?: string | null
-          is_free?: boolean
-          is_online?: boolean | null
-          location: string
-          organizer_description?: string | null
-          organizer_name: string
-          organizer_website?: string | null
-          other_category?: string | null
-          price?: number | null
-          source?: string | null
-          source_url?: string | null
-          start_date: string
-          start_time: string
-          status?: Database["public"]["Enums"]["event_status"]
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          approved_at?: string | null
-          category?: Database["public"]["Enums"]["event_category"]
-          created_at?: string
-          description?: string
-          end_date?: string
-          end_time?: string
-          id?: string
-          image_url?: string | null
-          is_free?: boolean
-          is_online?: boolean | null
-          location?: string
-          organizer_description?: string | null
-          organizer_name?: string
-          organizer_website?: string | null
-          other_category?: string | null
-          price?: number | null
-          source?: string | null
-          source_url?: string | null
-          start_date?: string
-          start_time?: string
-          status?: Database["public"]["Enums"]["event_status"]
-          title?: string
-          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -295,6 +241,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      increment_ai_usage: {
+        Args: { p_date: string; p_max_limit?: number; p_user_id: string }
+        Returns: Json
+      }
       is_admin: { Args: { uid?: string }; Returns: boolean }
     }
     Enums: {
