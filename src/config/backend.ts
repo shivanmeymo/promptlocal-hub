@@ -1,59 +1,50 @@
 /**
  * Backend Configuration
  * 
- * This file controls which backend provider to use for different services.
+ * NEW ARCHITECTURE:
+ * - Firebase: Authentication ONLY (frontend uses Firebase Auth)
+ * - Backend API: Verifies Firebase tokens, manages all database operations
+ * - Supabase: Database ONLY (accessed through backend API)
  * 
- * IMPORTANT: Firebase is ONLY used for:
- * 1. Authentication (Google OAuth, Email/Password)
- * 2. Cloud Messaging (Push Notifications)
- * 
- * All other services (database, storage, functions) use Supabase.
- * This architecture leverages:
- * - Firebase: Best-in-class authentication & Google ecosystem integration
- * - Supabase: PostgreSQL database, storage, edge functions, real-time features
+ * SECURITY:
+ * - Frontend NEVER accesses Supabase directly
+ * - All database operations go through authenticated backend API
+ * - Backend uses Supabase service role key (never exposed to frontend)
+ * - Row Level Security (RLS) enabled on all Supabase tables
  */
 
-export type BackendProvider = 'supabase' | 'firebase';
+export type BackendProvider = 'supabase' | 'firebase' | 'backend-api';
 
 export const BACKEND_CONFIG = {
-  // Authentication provider - Firebase for best Google OAuth support
+  // Authentication provider - Firebase (frontend)
   auth: 'firebase' as BackendProvider,
   
-  // Database provider - Supabase (PostgreSQL)
-  database: 'supabase' as BackendProvider,
+  // Database provider - Backend API (which uses Supabase internally)
+  database: 'backend-api' as BackendProvider,
   
-  // Storage provider - Supabase for images and files
-  storage: 'supabase' as BackendProvider,
+  // Storage provider - Backend API (which uses Supabase internally)
+  storage: 'backend-api' as BackendProvider,
   
-  // Serverless functions - Supabase Edge Functions (Deno runtime)
-  functions: 'supabase' as BackendProvider,
+  // Serverless functions - Backend API
+  functions: 'backend-api' as BackendProvider,
   
-  // Real-time subscriptions - Supabase
+  // Real-time subscriptions - Not implemented yet
   realtime: 'supabase' as BackendProvider,
 } as const;
 
 /**
- * Feature flags for hybrid mode
- * 
- * NOTE: This app runs in hybrid mode by design:
- * - Firebase handles authentication
- * - Supabase handles everything else
- * - User profiles are automatically synced from Firebase to Supabase
+ * Backend API Configuration
  */
-export const HYBRID_MODE = {
-  // Sync user profiles from Firebase Auth to Supabase database
-  // This must remain TRUE for the app to work correctly
-  syncUserProfiles: true,
+export const API_CONFIG = {
+  // Backend API URL (default: http://localhost:3001)
+  baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:3001',
   
-  // Send emails through both providers (not implemented)
-  dualEmailNotifications: false,
-  
-  // Store events in both databases (not needed - Supabase only)
-  dualEventStorage: false,
+  // Timeout for API requests (milliseconds)
+  timeout: 30000,
 } as const;
 
 /**
- * Firebase-specific features (Google ecosystem)
+ * Firebase-specific features (Google ecosystem only)
  */
 export const FIREBASE_FEATURES = {
   // Firebase Cloud Messaging for push notifications
@@ -61,18 +52,4 @@ export const FIREBASE_FEATURES = {
   
   // Google Analytics (if enabled)
   analytics: false,
-  
-  // Firebase Performance Monitoring (if enabled)
-  performanceMonitoring: false,
-} as const;
-
-/**
- * Migration helpers
- */
-export const MIGRATION = {
-  // Log all backend operations for debugging during migration
-  logAllOperations: false,
-  
-  // Compare results between providers (slower but safer)
-  validateMigration: false,
 } as const;

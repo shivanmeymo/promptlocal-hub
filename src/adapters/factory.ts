@@ -3,13 +3,10 @@
  * 
  * Returns the appropriate adapter based on configuration.
  * 
- * ARCHITECTURE:
- * - Firebase: Authentication + Google ecosystem (OAuth, Cloud Messaging)
- * - Supabase: Database, Storage, Functions, Real-time
- * 
- * This hybrid approach leverages the best of both platforms:
- * ✅ Firebase Auth: Industry-leading authentication with Google OAuth
- * ✅ Supabase: Modern PostgreSQL database with real-time capabilities
+ * NEW ARCHITECTURE:
+ * - Firebase: Authentication ONLY (frontend)
+ * - Backend API: All database operations (verifies Firebase tokens)
+ * - Supabase: Database storage (accessed only by backend)
  */
 
 import { BACKEND_CONFIG } from '@/config/backend';
@@ -24,6 +21,7 @@ import type {
 // Import adapters
 import { FirebaseAuthAdapter } from './firebase/auth';
 import { SupabaseAuthAdapter } from './supabase/auth';
+import { BackendDatabaseAdapter } from './backend/database';
 import { SupabaseDatabaseAdapter } from './supabase/database';
 import { SupabaseStorageAdapter } from './supabase/storage';
 import { SupabaseFunctionsAdapter } from './supabase/functions';
@@ -37,7 +35,7 @@ let functionsAdapter: IFunctionsAdapter | null = null;
 /**
  * Get Auth Adapter based on configuration
  * 
- * Default: Firebase (recommended for Google OAuth and authentication)
+ * Default: Firebase (frontend authentication)
  */
 export function getAuthAdapter(): IAuthAdapter {
   if (!authAdapter) {
@@ -54,18 +52,19 @@ export function getAuthAdapter(): IAuthAdapter {
 /**
  * Get Database Adapter based on configuration
  * 
- * Default: Supabase (PostgreSQL database)
- * Note: Firebase Firestore adapter not implemented (not needed for this app)
+ * NEW: Uses Backend API adapter (which verifies Firebase tokens and uses Supabase internally)
  */
 export function getDatabaseAdapter(): IDatabaseAdapter {
   if (!databaseAdapter) {
-    if (BACKEND_CONFIG.database === 'firebase') {
-      throw new Error(
-        'Firebase Database is not supported. This app uses Supabase for database. ' +
-        'Firebase is only for authentication and Google ecosystem features.'
-      );
-    } else {
+    if (BACKEND_CONFIG.database === 'backend-api') {
+      databaseAdapter = new BackendDatabaseAdapter();
+    } else if (BACKEND_CONFIG.database === 'supabase') {
+      // Direct Supabase access (legacy - not recommended for production)
       databaseAdapter = new SupabaseDatabaseAdapter();
+    } else {
+      throw new Error(
+        'Firebase Database is not supported. This app uses Backend API for database operations.'
+      );
     }
     console.log(`✅ Database Adapter initialized: ${BACKEND_CONFIG.database}`);
   }
