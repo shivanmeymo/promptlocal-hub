@@ -4,11 +4,11 @@ import type { AuthUser } from '@/adapters/interfaces';
 import { syncUserProfile, deleteUserProfile } from '@/integrations/supabase/auth-sync';
 
 interface Profile {
-  id: string;
+  id?: string;
   user_id: string;
-  full_name: string | null;
-  email: string | null;
-  avatar_url: string | null;
+  full_name?: string | null;
+  email?: string | null;
+  avatar_url?: string | null;
 }
 
 interface AuthContextType {

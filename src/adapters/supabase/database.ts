@@ -38,13 +38,13 @@ export class SupabaseDatabaseAdapter implements IDatabaseAdapter {
 
       // Apply filters
       if (options?.userId) {
-        query = query.eq('organizer_id', options.userId);
+        query = query.eq('user_id', options.userId);
       }
       if (options?.status) {
-        query = query.eq('status', options.status);
+        query = query.eq('status', options.status as any);
       }
       if (options?.category) {
-        query = query.eq('category', options.category);
+        query = query.eq('category', options.category as any);
       }
       if (options?.limit) {
         query = query.limit(options.limit);
@@ -96,7 +96,7 @@ export class SupabaseDatabaseAdapter implements IDatabaseAdapter {
     try {
       const { data, error } = await supabase
         .from('events')
-        .insert([event])
+        .insert([event as any])
         .select()
         .single();
 
@@ -120,7 +120,7 @@ export class SupabaseDatabaseAdapter implements IDatabaseAdapter {
     try {
       const { data, error } = await supabase
         .from('events')
-        .update(updates)
+        .update(updates as any)
         .eq('id', id)
         .select()
         .single();
@@ -190,7 +190,7 @@ export class SupabaseDatabaseAdapter implements IDatabaseAdapter {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .update(updates)
+        .update(updates as any)
         .eq('user_id', userId)
         .select()
         .single();
@@ -216,7 +216,9 @@ export class SupabaseDatabaseAdapter implements IDatabaseAdapter {
     options?: QueryOptions
   ): Promise<{ data: T[] | null; error: DatabaseError | null }> {
     try {
-      let query = supabase.from(table).select(options?.select || '*');
+      // Use any to avoid deep type instantiation
+      const client = supabase as any;
+      let query = client.from(table).select(options?.select || '*');
 
       // Apply filters
       if (options?.filters) {
@@ -260,9 +262,10 @@ export class SupabaseDatabaseAdapter implements IDatabaseAdapter {
     data: Partial<T> | Partial<T>[]
   ): Promise<{ data: T | T[] | null; error: DatabaseError | null }> {
     try {
-      const { data: result, error } = await supabase
+      const insertData = Array.isArray(data) ? data : [data];
+      const { data: result, error } = await (supabase as any)
         .from(table)
-        .insert(data)
+        .insert(insertData)
         .select();
 
       return {
@@ -287,7 +290,9 @@ export class SupabaseDatabaseAdapter implements IDatabaseAdapter {
     updates: Partial<T>
   ): Promise<{ data: T[] | null; error: DatabaseError | null }> {
     try {
-      let query = supabase.from(table).update(updates);
+      // Use any to avoid deep type instantiation
+      const client = supabase as any;
+      let query = client.from(table).update(updates);
 
       // Apply filters
       Object.entries(filters).forEach(([key, value]) => {
@@ -317,7 +322,9 @@ export class SupabaseDatabaseAdapter implements IDatabaseAdapter {
     filters: Record<string, any>
   ): Promise<{ error: DatabaseError | null }> {
     try {
-      let query = supabase.from(table).delete();
+      // Use any to avoid deep type instantiation
+      const client = supabase as any;
+      let query = client.from(table).delete();
 
       // Apply filters
       Object.entries(filters).forEach(([key, value]) => {

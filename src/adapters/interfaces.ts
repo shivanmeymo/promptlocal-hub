@@ -8,6 +8,7 @@
 // Generic types
 export interface AuthUser {
   id: string;
+  uid: string; // Alias for id (Firebase compatibility)
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
@@ -48,6 +49,7 @@ export interface QueryOptions {
 export interface Event {
   id?: string;
   user_id?: string;
+  user_id_firebase_backup?: string;
   title?: string;
   description?: string;
   start_date?: string;
@@ -55,6 +57,8 @@ export interface Event {
   end_date?: string;
   end_time?: string;
   location?: string;
+  latitude?: number;
+  longitude?: number;
   category?: string;
   other_category?: string | null;
   is_free?: boolean;
@@ -77,7 +81,7 @@ export interface Event {
 
 export interface Profile {
   id?: string;
-  user_id?: string;
+  user_id: string;
   full_name?: string | null;
   email?: string | null;
   avatar_url?: string | null;
