@@ -40,7 +40,7 @@ export const FirebaseAuthTest: React.FC = () => {
         // Wait a bit for profile sync
         setTimeout(() => {
           if (user) {
-            addTestResult('Firebase User', 'success', `UID: ${user.uid}`);
+            addTestResult('Firebase User', 'success', `UID: ${user.id}`);
             addTestResult('Firebase Email', 'success', user.email || 'No email');
           }
           if (profile) {
@@ -71,7 +71,7 @@ export const FirebaseAuthTest: React.FC = () => {
         
         setTimeout(() => {
           if (user) {
-            addTestResult('Firebase User', 'success', `UID: ${user.uid}`);
+            addTestResult('Firebase User', 'success', `UID: ${user.id}`);
             addTestResult('Firebase Email', 'success', user.email || 'No email');
           }
           if (profile) {
@@ -158,7 +158,7 @@ export const FirebaseAuthTest: React.FC = () => {
             <User className="h-4 w-4" />
             <AlertTitle>Current User (Firebase)</AlertTitle>
             <AlertDescription className="space-y-1">
-              <div><strong>UID:</strong> {user.uid}</div>
+              <div><strong>UID:</strong> {user.id}</div>
               <div><strong>Email:</strong> {user.email}</div>
               <div><strong>Display Name:</strong> {user.displayName || 'Not set'}</div>
               <div><strong>Email Verified:</strong> {user.emailVerified ? '✅' : '❌'}</div>

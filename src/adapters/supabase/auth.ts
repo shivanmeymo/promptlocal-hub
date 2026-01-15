@@ -16,6 +16,7 @@ import type { User as SupabaseUser, AuthError as SupabaseAuthError } from '@supa
 function convertSupabaseUser(user: SupabaseUser): AuthUser {
   return {
     id: user.id,
+    uid: user.id,
     email: user.email || null,
     displayName: user.user_metadata?.full_name || user.user_metadata?.display_name || null,
     photoURL: user.user_metadata?.avatar_url || null,
@@ -159,14 +160,8 @@ export class SupabaseAuthAdapter implements IAuthAdapter {
    * Get current authenticated user
    */
   getCurrentUser(): AuthUser | null {
-    const { data } = supabase.auth.getUser();
     // Note: getUser() returns a promise, but we need sync method
     // In practice, use onAuthStateChanged or fetch session
-    
-    // Synchronous alternative:
-    const session = supabase.auth.getSession();
-    // This is also async... For now return null and rely on onAuthStateChanged
-    
     console.warn('SupabaseAuthAdapter.getCurrentUser() is async in nature. Use onAuthStateChanged instead.');
     return null;
   }

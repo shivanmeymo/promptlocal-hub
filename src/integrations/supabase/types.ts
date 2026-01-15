@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_usage: {
         Row: {
           created_at: string
@@ -97,93 +118,78 @@ export type Database = {
       }
       events: {
         Row: {
-          admin_notes: string | null
-          approved_at: string | null
-          approved_by: string | null
-          category: Database["public"]["Enums"]["event_category"]
-          created_at: string
+          category: string
+          created_at: string | null
           description: string
           end_date: string
           end_time: string
           id: string
           image_url: string | null
           is_free: boolean
-          is_online: boolean | null
-          is_recurring: boolean | null
+          latitude: number
           location: string
-          organizer_description: string | null
-          organizer_email: string
-          organizer_name: string
-          organizer_website: string | null
-          other_category: string | null
-          price: number | null
-          recurring_pattern: string | null
+          longitude: number
           start_date: string
-          start_time: string
-          status: Database["public"]["Enums"]["event_status"]
+          status: string
           title: string
-          updated_at: string
+          updated_at: string | null
           user_id: string | null
+          user_id_firebase_backup: string
         }
         Insert: {
-          admin_notes?: string | null
-          approved_at?: string | null
-          approved_by?: string | null
-          category?: Database["public"]["Enums"]["event_category"]
-          created_at?: string
+          category: string
+          created_at?: string | null
           description: string
           end_date: string
-          end_time: string
+          end_time?: string
           id?: string
           image_url?: string | null
           is_free?: boolean
-          is_online?: boolean | null
-          is_recurring?: boolean | null
+          latitude: number
           location: string
-          organizer_description?: string | null
-          organizer_email: string
-          organizer_name: string
-          organizer_website?: string | null
-          other_category?: string | null
-          price?: number | null
-          recurring_pattern?: string | null
+          longitude: number
           start_date: string
-          start_time: string
-          status?: Database["public"]["Enums"]["event_status"]
+          status?: string
           title: string
-          updated_at?: string
+          updated_at?: string | null
           user_id?: string | null
+          user_id_firebase_backup: string
         }
         Update: {
-          admin_notes?: string | null
-          approved_at?: string | null
-          approved_by?: string | null
-          category?: Database["public"]["Enums"]["event_category"]
-          created_at?: string
+          category?: string
+          created_at?: string | null
           description?: string
           end_date?: string
           end_time?: string
           id?: string
           image_url?: string | null
           is_free?: boolean
-          is_online?: boolean | null
-          is_recurring?: boolean | null
+          latitude?: number
           location?: string
-          organizer_description?: string | null
-          organizer_email?: string
-          organizer_name?: string
-          organizer_website?: string | null
-          other_category?: string | null
-          price?: number | null
-          recurring_pattern?: string | null
+          longitude?: number
           start_date?: string
-          start_time?: string
-          status?: Database["public"]["Enums"]["event_status"]
+          status?: string
           title?: string
-          updated_at?: string
+          updated_at?: string | null
           user_id?: string | null
+          user_id_firebase_backup?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "events_user_id_fkey"
+            columns: ["user_id_firebase_backup"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_events_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -233,6 +239,36 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          display_name: string | null
+          email: string | null
+          firebase_uid: string
+          id: string
+          photo_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_name?: string | null
+          email?: string | null
+          firebase_uid: string
+          id?: string
+          photo_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_name?: string | null
+          email?: string | null
+          firebase_uid?: string
+          id?: string
+          photo_url?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }

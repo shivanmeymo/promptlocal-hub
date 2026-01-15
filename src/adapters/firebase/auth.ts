@@ -35,6 +35,7 @@ import {
 function convertFirebaseUser(user: any): AuthUser {
   return {
     id: user.uid,
+    uid: user.uid,
     email: user.email,
     displayName: user.displayName,
     photoURL: user.photoURL,

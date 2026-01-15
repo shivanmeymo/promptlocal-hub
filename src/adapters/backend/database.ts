@@ -255,13 +255,70 @@ export class BackendDatabaseAdapter implements IDatabaseAdapter {
   /**
    * Generic query (NOT SUPPORTED - use backend API endpoints)
    */
-  async query(options: any): Promise<{ data: any[] | null; error: DatabaseError | null }> {
+  async query<T = any>(
+    table: string,
+    options?: any
+  ): Promise<{ data: T[] | null; error: DatabaseError | null }> {
     console.warn('Generic query not supported in backend adapter - use specific API endpoints');
     return {
       data: null,
       error: {
         code: 'not_supported',
         message: 'Generic queries not supported - use specific API endpoints',
+        details: null,
+      },
+    };
+  }
+
+  /**
+   * Generic insert (NOT SUPPORTED - use backend API endpoints)
+   */
+  async insert<T = any>(
+    table: string,
+    data: Partial<T> | Partial<T>[]
+  ): Promise<{ data: T | T[] | null; error: DatabaseError | null }> {
+    console.warn('Generic insert not supported in backend adapter - use specific API endpoints');
+    return {
+      data: null,
+      error: {
+        code: 'not_supported',
+        message: 'Generic insert not supported - use specific API endpoints',
+        details: null,
+      },
+    };
+  }
+
+  /**
+   * Generic update (NOT SUPPORTED - use backend API endpoints)
+   */
+  async update<T = any>(
+    table: string,
+    filters: Record<string, any>,
+    updates: Partial<T>
+  ): Promise<{ data: T[] | null; error: DatabaseError | null }> {
+    console.warn('Generic update not supported in backend adapter - use specific API endpoints');
+    return {
+      data: null,
+      error: {
+        code: 'not_supported',
+        message: 'Generic update not supported - use specific API endpoints',
+        details: null,
+      },
+    };
+  }
+
+  /**
+   * Generic delete (NOT SUPPORTED - use backend API endpoints)
+   */
+  async delete(
+    table: string,
+    filters: Record<string, any>
+  ): Promise<{ error: DatabaseError | null }> {
+    console.warn('Generic delete not supported in backend adapter - use specific API endpoints');
+    return {
+      error: {
+        code: 'not_supported',
+        message: 'Generic delete not supported - use specific API endpoints',
         details: null,
       },
     };

@@ -5,7 +5,14 @@
 
 import type { IStorageAdapter, StorageError } from '../interfaces';
 import { supabase } from '@/integrations/supabase/client';
-import type { StorageError as SupabaseStorageError } from '@supabase/supabase-js';
+
+/**
+ * Supabase storage error type (simplified)
+ */
+interface SupabaseStorageError {
+  statusCode?: string | number;
+  message: string;
+}
 
 /**
  * Convert Supabase storage error to generic StorageError
